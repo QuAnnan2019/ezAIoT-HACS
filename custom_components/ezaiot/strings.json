@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up ezAIoT",
+        "description": "ezAIoT scans local Home Assistant registries for supported Rti-Tek thermostatic valves. It does not control devices or change Zigbee configuration."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "ezAIoT is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ezAIoT support",
+        "description": "See the repository README for installation guidance and use Home Assistant's Download diagnostics action before requesting support."
+      }
+    }
+  }
+}
