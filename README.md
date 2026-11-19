@@ -12,6 +12,10 @@ The diagnostic sensor reports the number of exact-match ZHA devices. Use
 Home Assistant's native **Download diagnostics** action on the integration
 page to create a redacted support report.
 
+The `ezAIoT` sidebar panel displays local compatibility status and the Quirk
+update-source state. Until a trusted GitHub Release catalog is configured,
+the panel makes no GitHub requests and does not deploy Quirks.
+
 ## Manual Installation
 
 Copy `custom_components/ezaiot` to
