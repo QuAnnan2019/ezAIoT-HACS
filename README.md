@@ -8,6 +8,10 @@ as separate features.
 This release does not install Quirks, modify YAML, communicate with devices,
 deploy Zigbee2MQTT converters, or send data outside Home Assistant.
 
+The diagnostic sensor reports the number of exact-match ZHA devices. Use
+Home Assistant's native **Download diagnostics** action on the integration
+page to create a redacted support report.
+
 ## Manual Installation
 
 Copy `custom_components/ezaiot` to
