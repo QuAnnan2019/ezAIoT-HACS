@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "设置 ezAIoT",
+        "description": "ezAIoT 仅扫描本地 Home Assistant 注册表以识别受支持的 Rti-Tek 恒温阀，不控制设备，也不修改 Zigbee 配置。"
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "ezAIoT 已配置。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ezAIoT 支持",
+        "description": "安装说明请查看仓库 README；联系支持前请使用 Home Assistant 原生的下载诊断信息功能。"
+      }
+    }
+  }
+}
