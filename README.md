@@ -16,7 +16,23 @@ The `ezAIoT` sidebar panel displays local compatibility status and the Quirk
 update-source state. Until a trusted GitHub Release catalog is configured,
 the panel makes no GitHub requests and does not deploy Quirks.
 
-## Manual Installation
+## Install from Marketplace
+
+1. In Home Assistant, open **Settings > Marketplace**.
+2. Open the menu, choose **Custom repositories**, and add
+   `https://github.com/QuAnnan2019/ezAIoT-HACS` as an **Integration**.
+3. Find **ezAIoT**, install it, and restart Home Assistant when prompted.
+4. Open **Settings > Devices & services > Add integration**, then add
+   **ezAIoT**.
+5. Open **ezAIoT** from the sidebar to view local compatibility status.
+
+## Demo Scope
+
+This Demo reads Home Assistant's local device and entity registries for
+exact-match Rti-Tek eTRV-ZB01 devices. It does not contact GitHub, control
+devices, modify ZHA or Zigbee2MQTT, write Quirk files, or change YAML.
+
+## Manual Development Installation
 
 Copy `custom_components/ezaiot` to
 `/config/custom_components/ezaiot`, restart Home Assistant, then add `ezAIoT`
