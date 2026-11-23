@@ -78,3 +78,16 @@ class DeploymentState:
     backup_version: str | None
     deployed_at: str | None
     last_error: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class UnsignedReleaseState:
+    """Redacted test Release state safe for Home Assistant presentation."""
+
+    status: ReleaseStatus
+    installed_version: str | None
+    backup_version: str | None
+    available_version: str | None
+    release_notes: str
+    restart_required: bool
+    message: str
