@@ -5,16 +5,18 @@ This initial package provides the integration entry and a single-instance
 configuration flow. Device discovery and the application panel are developed
 as separate features.
 
-This release does not install Quirks, modify YAML, communicate with devices,
-deploy Zigbee2MQTT converters, or send data outside Home Assistant.
+This test release can manually download and install the one exact ZHA Quirk
+package for Rti-Tek eTRV-ZB01 from the fixed GitHub Release source. It does
+not modify YAML, communicate with devices, deploy Zigbee2MQTT converters, or
+automatically restart Home Assistant.
 
 The diagnostic sensor reports the number of exact-match ZHA devices. Use
 Home Assistant's native **Download diagnostics** action on the integration
 page to create a redacted support report.
 
-The `ezAIoT` sidebar panel displays local compatibility status and the Quirk
-update-source state. Until a trusted GitHub Release catalog is configured,
-the panel makes no GitHub requests and does not deploy Quirks.
+The `ezAIoT` sidebar panel displays local compatibility status and a manual
+test Release workflow. An administrator can check, install, and roll back one
+ezAIoT-managed Release. Installing and rolling back require confirmation.
 
 ## Install from Marketplace
 
@@ -26,11 +28,22 @@ the panel makes no GitHub requests and does not deploy Quirks.
    **ezAIoT**.
 5. Open **ezAIoT** from the sidebar to view local compatibility status.
 
-## Demo Scope
+## Test Release Scope
 
-This Demo reads Home Assistant's local device and entity registries for
-exact-match Rti-Tek eTRV-ZB01 devices. It does not contact GitHub, control
-devices, modify ZHA or Zigbee2MQTT, write Quirk files, or change YAML.
+This test mode reads local device and entity registries for exact-match
+Rti-Tek eTRV-ZB01 devices and can contact the fixed GitHub Release source
+only when the update coordinator or an administrator requests a check.
+
+The Release ZIP is installed only below `/config/zha_quirks/ezaiot/`; existing
+files below `/config/zha_quirks/` are left untouched. The previous
+ezAIoT-managed version is retained for one explicit rollback. After deploying
+or rolling back, configure ZHA's `custom_quirks_path` yourself if needed,
+restart Home Assistant, then reconfigure or re-pair the device as appropriate.
+
+The panel labels this feature **Unsigned test mode**. It intentionally does
+not yet verify a Release signature or package hash. Use it only with an
+isolated test Home Assistant instance. Before a public release, the signed
+manifest and package-validation path must replace this test workflow.
 
 ## Manual Development Installation
 
