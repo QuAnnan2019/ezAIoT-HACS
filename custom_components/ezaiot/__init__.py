@@ -27,6 +27,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         release_service = UnsignedReleaseService(hass)
         await release_service.async_initialize()
         release_coordinator = UnsignedReleaseCoordinator(hass, release_service)
+        release_coordinator.async_set_updated_data(release_service.state)
         hass.data[DOMAIN] = {
             DATA_RELEASE_SERVICE: release_service,
             DATA_RELEASE_COORDINATOR: release_coordinator,

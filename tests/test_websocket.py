@@ -1,12 +1,17 @@
 import asyncio
 from types import SimpleNamespace
 
-from custom_components.ezaiot.const import DATA_COORDINATOR, DOMAIN
+from custom_components.ezaiot.const import (
+    DATA_COORDINATOR,
+    DATA_RELEASE_SERVICE,
+    DOMAIN,
+)
 from custom_components.ezaiot.models import (
     CompatibilityState,
     DiscoveryResult,
     SupportRecord,
 )
+from custom_components.ezaiot.release_models import ReleaseStatus, UnsignedReleaseState
 from custom_components.ezaiot.websocket import websocket_get_status
 
 
@@ -30,8 +35,22 @@ def test_websocket_returns_redacted_panel_status() -> None:
             ),
         ),
     )
+    release_state = UnsignedReleaseState(
+        status=ReleaseStatus.UPDATE_AVAILABLE,
+        installed_version="0.0.1",
+        backup_version="0.0.0",
+        available_version="0.0.2",
+        release_notes="Test change.",
+        restart_required=True,
+        message="A test Release is ready to install.",
+    )
     hass = SimpleNamespace(
-        data={DOMAIN: {"entry-1": {DATA_COORDINATOR: SimpleNamespace(data=result)}}}
+        data={
+            DOMAIN: {
+                "entry-1": {DATA_COORDINATOR: SimpleNamespace(data=result)},
+                DATA_RELEASE_SERVICE: SimpleNamespace(state=release_state),
+            }
+        }
     )
     connection = Connection()
 
@@ -57,8 +76,14 @@ def test_websocket_returns_redacted_panel_status() -> None:
                 }
             ],
             "update_source": {
-                "state": "not_configured",
-                "message": "GitHub release source is not configured.",
+                "state": "update_available",
+                "installed_version": "0.0.1",
+                "backup_version": "0.0.0",
+                "available_version": "0.0.2",
+                "release_notes": "Test change.",
+                "restart_required": True,
+                "message": "A test Release is ready to install.",
+                "test_mode": True,
             },
         },
     )

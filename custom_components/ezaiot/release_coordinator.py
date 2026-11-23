@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import logging
+
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN, RELEASE_CHECK_INTERVAL
 from .release_models import UnsignedReleaseState
 from .release_service import UnsignedReleaseService
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class UnsignedReleaseCoordinator(DataUpdateCoordinator[UnsignedReleaseState]):
@@ -18,7 +22,7 @@ class UnsignedReleaseCoordinator(DataUpdateCoordinator[UnsignedReleaseState]):
         self.service = service
         super().__init__(
             hass,
-            logger=None,
+            logger=_LOGGER,
             name=f"{DOMAIN} unsigned test Release",
             update_interval=RELEASE_CHECK_INTERVAL,
         )
