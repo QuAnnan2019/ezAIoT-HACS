@@ -61,6 +61,16 @@ class ReleaseCandidate:
 
 
 @dataclass(frozen=True, slots=True)
+class UnsignedReleaseCandidate:
+    """Unsigned Release metadata allowed only during integration testing."""
+
+    version: str
+    package: ReleaseAsset
+    release_notes: str
+    release_url: str
+
+
+@dataclass(frozen=True, slots=True)
 class DeploymentState:
     """Persisted state for the ezAIoT-managed Quirk directory."""
 
