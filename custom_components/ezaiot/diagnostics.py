@@ -6,8 +6,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import __version__ as HA_VERSION
 from homeassistant.core import HomeAssistant
 
-from .const import DATA_COORDINATOR, DOMAIN, INTEGRATION_VERSION
+from .const import DATA_COORDINATOR, DATA_RELEASE_SERVICE, DOMAIN, INTEGRATION_VERSION
 from .coordinator import EzaiotCoordinator
+from .release_service import UnsignedReleaseService
 
 
 async def async_get_config_entry_diagnostics(
@@ -17,6 +18,8 @@ async def async_get_config_entry_diagnostics(
     """Return diagnostics without registry identifiers or raw device data."""
     coordinator: EzaiotCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
     result = coordinator.data
+    release_service: UnsignedReleaseService = hass.data[DOMAIN][DATA_RELEASE_SERVICE]
+    release = release_service.state
     return {
         "integration_version": INTEGRATION_VERSION,
         "home_assistant_version": HA_VERSION,
@@ -30,4 +33,11 @@ async def async_get_config_entry_diagnostics(
             }
             for record in result.records
         ],
+        "test_release": {
+            "status": release.status.value,
+            "installed_version": release.installed_version,
+            "backup_version": release.backup_version,
+            "available_version": release.available_version,
+            "restart_required": release.restart_required,
+        },
     }

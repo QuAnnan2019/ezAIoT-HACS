@@ -27,10 +27,42 @@ class EzaiotPanel extends HTMLElement {
     }
   }
 
+  _escape(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  async _runReleaseAction(type, confirmation) {
+    if (!this._hass || this._releaseAction) return;
+    if (confirmation && !window.confirm(confirmation)) return;
+
+    this._releaseAction = type;
+    this._render();
+    try {
+      await this._hass.callWS({ type });
+      await this._loadStatus(true);
+    } catch (error) {
+      this._error = "Unable to complete the test Release action.";
+    } finally {
+      this._releaseAction = null;
+      this._render();
+    }
+  }
+
   _render() {
     if (!this.shadowRoot) return;
 
     const status = this._status;
+    const release = status?.update_source;
+    const isAdmin = this._hass?.user?.is_admin === true;
+    const actionInProgress = Boolean(this._releaseAction);
+    const hasBackup = Boolean(release?.backup_version);
+    const canInstall = release?.state === "update_available";
+    const releaseNotes = this._escape(release?.release_notes);
     const deviceContent = !status
       ? "<p class=\"muted\">Loading local compatibility status...</p>"
       : status.records.length === 0
@@ -57,6 +89,11 @@ class EzaiotPanel extends HTMLElement {
         .metric { font-size: 48px; font-weight: 500; line-height: 1; margin-bottom: 10px; }
         .state { color: var(--success-color, #1b873f); }
         .warning { color: var(--warning-color, #b26a00); }
+        .test-mode { color: var(--error-color); font-weight: 600; margin-bottom: 8px; }
+        .release-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+        .release-actions button { border: 1px solid var(--primary-color); border-radius: 4px; background: transparent; color: var(--primary-color); min-height: 36px; padding: 0 14px; cursor: pointer; }
+        .release-actions button.primary { background: var(--primary-color); color: var(--text-primary-color, white); }
+        .release-actions button:disabled { cursor: default; opacity: 0.5; }
         ul { list-style: none; margin: 0; padding: 0; }
         li { border-top: 1px solid var(--divider-color); display: flex; flex-direction: column; gap: 5px; padding: 14px 0; }
         li:first-child { border-top: 0; padding-top: 0; }
@@ -80,8 +117,17 @@ class EzaiotPanel extends HTMLElement {
           </section>
           <section>
             <h2>Quirk updates</h2>
-            <p class="warning">${status ? status.update_source.message : "Loading update source status..."}</p>
-            <p class="muted" style="margin-top:12px">No GitHub request is made until a trusted release source is configured.</p>
+            <p class="${release?.state === "update_available" ? "state" : "warning"}">${this._escape(release?.message || "Loading test Release status...")}</p>
+            ${release?.test_mode ? "<p class=\"test-mode\">Unsigned test mode</p>" : ""}
+            ${release?.available_version ? `<p class="muted">Installed: ${this._escape(release.installed_version || "none")} · Available: ${this._escape(release.available_version)}</p>` : ""}
+            ${releaseNotes ? `<p class="muted" style="margin-top:12px">${releaseNotes}</p>` : ""}
+            ${release?.restart_required ? "<p class=\"warning\" style=\"margin-top:12px\">Restart Home Assistant after deployment to load the Quirk.</p>" : ""}
+            ${isAdmin ? `
+              <div class="release-actions">
+                <button data-release-action="ezaiot/check_release" ${actionInProgress ? "disabled" : ""}>Check release</button>
+                <button class="primary" data-release-action="ezaiot/install_release" ${!canInstall || actionInProgress ? "disabled" : ""}>Install update</button>
+                <button data-release-action="ezaiot/rollback_release" ${!hasBackup || actionInProgress ? "disabled" : ""}>Rollback</button>
+              </div>` : ""}
           </section>
           <section class="wide">
             <h2>Compatibility</h2>
@@ -96,6 +142,17 @@ class EzaiotPanel extends HTMLElement {
       </main>
     `;
     this.shadowRoot.querySelector(".refresh")?.addEventListener("click", () => this._loadStatus(true));
+    this.shadowRoot.querySelectorAll("[data-release-action]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const type = button.dataset.releaseAction;
+        const confirmation = type === "ezaiot/install_release"
+          ? "Install this unsigned test Release? Home Assistant must be restarted afterwards."
+          : type === "ezaiot/rollback_release"
+            ? "Restore the previous unsigned test Release? Home Assistant must be restarted afterwards."
+            : null;
+        this._runReleaseAction(type, confirmation);
+      });
+    });
   }
 }
 
