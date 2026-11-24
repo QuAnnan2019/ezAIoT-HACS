@@ -34,11 +34,16 @@ This test mode reads local device and entity registries for exact-match
 Rti-Tek eTRV-ZB01 devices and can contact the fixed GitHub Release source
 only when the update coordinator or an administrator requests a check.
 
-The Release ZIP is installed only below `/config/zha_quirks/ezaiot/`; existing
-files below `/config/zha_quirks/` are left untouched. The previous
-ezAIoT-managed version is retained for one explicit rollback. After deploying
-or rolling back, configure ZHA's `custom_quirks_path` yourself if needed,
-restart Home Assistant, then reconfigure or re-pair the device as appropriate.
+The Release ZIP is installed directly in `/config/zha_quirks/`, so the current
+package creates `/config/zha_quirks/rti_tek_etrv_zb01.py`. Existing files are
+left untouched; a same-name file without the ezAIoT root version marker is not
+overwritten. The previous ezAIoT-managed files and metadata are retained in
+`/config/zha_quirks/.ezaiot-backup/` for one explicit rollback. Version
+metadata is kept in the hidden root file `.ezaiot-release-version`, and the
+broken legacy `/config/zha_quirks/ezaiot/` layout is removed after a successful
+0.0.2 migration. After deploying or rolling back, configure ZHA's
+`custom_quirks_path` yourself if needed, restart Home Assistant, then
+reconfigure or re-pair the device as appropriate.
 
 The panel labels this feature **Unsigned test mode**. It intentionally does
 not yet verify a Release signature or package hash. Use it only with an
