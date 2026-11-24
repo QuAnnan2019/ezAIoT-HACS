@@ -75,6 +75,18 @@ def test_websocket_returns_redacted_panel_status() -> None:
                     "entity_count": 3,
                 }
             ],
+            "guidance": {
+                "code": "restart_home_assistant",
+                "title": "Restart Home Assistant",
+                "message": (
+                    "Keep this in configuration.yaml:\n"
+                    "zha:\n"
+                    "  custom_quirks_path: /config/zha_quirks\n\n"
+                    "Restart Home Assistant to load the installed Quirk, then use "
+                    "Reconfigure or re-pair the device."
+                ),
+                "actionable": True,
+            },
             "update_source": {
                 "state": "update_available",
                 "installed_version": "0.0.1",

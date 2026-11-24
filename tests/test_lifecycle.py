@@ -29,6 +29,7 @@ def test_first_entry_registers_panel_websocket_and_coordinator() -> None:
             new=AsyncMock(),
         ) as register_panel,
         patch("custom_components.ezaiot.async_register_websocket_commands") as register_ws,
+        patch("custom_components.ezaiot.async_sync_guidance_notification") as sync_guidance,
         patch("custom_components.ezaiot.EzaiotCoordinator") as coordinator_type,
         patch("custom_components.ezaiot.UnsignedReleaseService") as service_type,
         patch("custom_components.ezaiot.UnsignedReleaseCoordinator") as release_type,
@@ -47,6 +48,7 @@ def test_first_entry_registers_panel_websocket_and_coordinator() -> None:
     assert hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR] is coordinator
     assert hass.data[DOMAIN][DATA_RELEASE_SERVICE] is service_type.return_value
     assert hass.data[DOMAIN][DATA_RELEASE_COORDINATOR] is release_type.return_value
+    sync_guidance.assert_called_once_with(hass, coordinator.data)
     forward_setups.assert_awaited_once()
 
 

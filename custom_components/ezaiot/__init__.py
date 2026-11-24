@@ -13,6 +13,7 @@ from .const import (
     PLATFORMS,
 )
 from .coordinator import EzaiotCoordinator
+from .guidance import async_sync_guidance_notification
 from .panel import async_register_panel, async_remove_panel
 from .release_coordinator import UnsignedReleaseCoordinator
 from .release_service import UnsignedReleaseService
@@ -38,6 +39,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][entry.entry_id] = {
         DATA_COORDINATOR: coordinator,
     }
+    async_sync_guidance_notification(hass, coordinator.data)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 

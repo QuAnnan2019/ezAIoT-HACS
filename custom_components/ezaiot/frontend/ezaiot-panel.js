@@ -58,6 +58,7 @@ class EzaiotPanel extends HTMLElement {
 
     const status = this._status;
     const release = status?.update_source;
+    const guidance = status?.guidance;
     const isAdmin = this._hass?.user?.is_admin === true;
     const actionInProgress = Boolean(this._releaseAction);
     const hasBackup = Boolean(release?.backup_version);
@@ -94,6 +95,8 @@ class EzaiotPanel extends HTMLElement {
         .release-actions button { border: 1px solid var(--primary-color); border-radius: 4px; background: transparent; color: var(--primary-color); min-height: 36px; padding: 0 14px; cursor: pointer; }
         .release-actions button.primary { background: var(--primary-color); color: var(--text-primary-color, white); }
         .release-actions button:disabled { cursor: default; opacity: 0.5; }
+        .guidance pre { background: var(--secondary-background-color); border: 1px solid var(--divider-color); margin: 14px 0; overflow-x: auto; padding: 12px; white-space: pre; }
+        .guidance-message { white-space: pre-line; }
         ul { list-style: none; margin: 0; padding: 0; }
         li { border-top: 1px solid var(--divider-color); display: flex; flex-direction: column; gap: 5px; padding: 14px 0; }
         li:first-child { border-top: 0; padding-top: 0; }
@@ -110,6 +113,14 @@ class EzaiotPanel extends HTMLElement {
           <button class="refresh" title="Refresh" aria-label="Refresh local status">↻</button>
         </header>
         <div class="grid">
+          <section class="wide guidance ${guidance?.actionable ? "warning" : "state"}">
+            <h2>ZHA setup</h2>
+            <strong>${this._escape(guidance?.title || "Loading guidance...")}</strong>
+            <pre>zha:
+  custom_quirks_path: /config/zha_quirks</pre>
+            <p class="guidance-message">${this._escape(guidance?.message || "")}</p>
+            <p class="muted" style="margin-top:12px">This setting is manual. After an update, Reconfigure or re-pair when guidance asks you to.</p>
+          </section>
           <section>
             <h2>Supported devices</h2>
             <div class="metric">${status ? status.supported_count : "—"}</div>

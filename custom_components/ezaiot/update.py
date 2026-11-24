@@ -8,7 +8,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DATA_RELEASE_COORDINATOR, DOMAIN
+from .const import DATA_COORDINATOR, DATA_RELEASE_COORDINATOR, DOMAIN
+from .guidance import async_sync_guidance_notification
 from .release_coordinator import UnsignedReleaseCoordinator
 
 
@@ -42,6 +43,7 @@ class EzaiotTestReleaseUpdate(
     ) -> None:
         """Initialize stable identity for the singleton integration entry."""
         super().__init__(coordinator)
+        self._entry_id = entry.entry_id
         self._attr_unique_id = f"{entry.entry_id}_test_quirk_release"
 
     @property
@@ -75,3 +77,7 @@ class EzaiotTestReleaseUpdate(
             raise ValueError("Only the latest test Release can be installed")
         state = await self.coordinator.service.async_install()
         self.coordinator.async_set_updated_data(state)
+        discovery = self.coordinator.hass.data[DOMAIN][self._entry_id][
+            DATA_COORDINATOR
+        ].data
+        async_sync_guidance_notification(self.coordinator.hass, discovery)
