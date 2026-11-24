@@ -15,7 +15,8 @@ from .const import (
     INTEGRATION_VERSION,
 )
 from .coordinator import EzaiotCoordinator
-from .guidance import async_sync_guidance_notification
+from .guidance import Guidance, async_sync_guidance_notification, build_guidance
+from .models import CompatibilityState, DiscoveryResult
 from .release_models import UnsignedReleaseState
 from .release_service import UnsignedReleaseService
 
@@ -31,6 +32,16 @@ def _release_state_payload(state: UnsignedReleaseState) -> dict[str, object]:
         "restart_required": state.restart_required,
         "message": state.message,
         "test_mode": True,
+    }
+
+
+def _guidance_payload(guidance: Guidance) -> dict[str, object]:
+    """Return display-ready setup guidance without local registry data."""
+    return {
+        "code": guidance.code.value,
+        "title": guidance.title,
+        "message": guidance.message,
+        "actionable": guidance.actionable,
     }
 
 
@@ -73,13 +84,21 @@ async def websocket_get_status(
             for record in coordinator.data.records
         )
 
+    release_state = _release_service(hass).state
+    discovery = DiscoveryResult(
+        state=(
+            CompatibilityState.SUPPORTED if records else CompatibilityState.NOT_FOUND
+        ),
+        records=(),
+    )
     connection.send_result(
         msg["id"],
         {
             "integration_version": INTEGRATION_VERSION,
             "supported_count": len(records),
             "records": records,
-            "update_source": _release_state_payload(_release_service(hass).state),
+            "guidance": _guidance_payload(build_guidance(discovery, release_state)),
+            "update_source": _release_state_payload(release_state),
         },
     )
 

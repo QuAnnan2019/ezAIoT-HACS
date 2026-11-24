@@ -33,5 +33,8 @@ def test_panel_renders_unsigned_test_release_controls() -> None:
     assert "Unsigned test mode" in source
     assert "Install this unsigned test Release?" in source
     assert "Restore the previous unsigned test Release?" in source
+    assert "ZHA setup" in source
+    assert "custom_quirks_path: /config/zha_quirks" in source
+    assert "Reconfigure or re-pair" in source
     assert "Diagnostics and help" in source
     assert 'customElements.define("ezaiot-panel", EzaiotPanel)' in source
