@@ -2,10 +2,12 @@
 
 import asyncio
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import pytest
 from homeassistant.components.update import UpdateEntityFeature
 
+from custom_components.ezaiot.const import DATA_COORDINATOR, DOMAIN
 from custom_components.ezaiot.release_models import ReleaseStatus, UnsignedReleaseState
 from custom_components.ezaiot.update import EzaiotTestReleaseUpdate
 
@@ -41,15 +43,22 @@ def test_update_entity_rejects_specific_versions_and_delegates_latest() -> None:
     async def install() -> UnsignedReleaseState:
         return installed
 
+    discovery = SimpleNamespace()
+    hass = SimpleNamespace(
+        data={DOMAIN: {"entry-1": {DATA_COORDINATOR: SimpleNamespace(data=discovery)}}}
+    )
     coordinator = SimpleNamespace(
         data=_state(),
         service=SimpleNamespace(async_install=install),
+        hass=hass,
         async_set_updated_data=lambda data: setattr(coordinator, "data", data),
     )
     entity = EzaiotTestReleaseUpdate(coordinator, SimpleNamespace(entry_id="entry-1"))
 
     with pytest.raises(ValueError, match="latest"):
         asyncio.run(entity.async_install("0.0.2", False))
-    asyncio.run(entity.async_install(None, False))
+    with patch("custom_components.ezaiot.update.async_sync_guidance_notification") as sync:
+        asyncio.run(entity.async_install(None, False))
 
     assert coordinator.data.status is ReleaseStatus.UP_TO_DATE
+    sync.assert_called_once_with(hass, discovery)
