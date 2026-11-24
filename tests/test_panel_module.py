@@ -38,3 +38,14 @@ def test_panel_renders_unsigned_test_release_controls() -> None:
     assert "Reconfigure or re-pair" in source
     assert "Diagnostics and help" in source
     assert 'customElements.define("ezaiot-panel", EzaiotPanel)' in source
+
+
+def test_options_guidance_mentions_the_required_zha_path() -> None:
+    """Both shipped Options translations explain the manual prerequisite."""
+    english = Path("custom_components/ezaiot/strings.json").read_text(encoding="utf-8")
+    chinese = Path(
+        "custom_components/ezaiot/translations/zh-Hans.json"
+    ).read_text(encoding="utf-8")
+
+    assert "custom_quirks_path: /config/zha_quirks" in english
+    assert "custom_quirks_path: /config/zha_quirks" in chinese

@@ -14,7 +14,7 @@
     "step": {
       "init": {
         "title": "ezAIoT support",
-        "description": "See the repository README for installation guidance and use Home Assistant's Download diagnostics action before requesting support."
+        "description": "Add `zha: custom_quirks_path: /config/zha_quirks` to configuration.yaml, restart Home Assistant, then use the ezAIoT sidebar to install the approved Quirk Release. Reconfigure or re-pair the device when the guidance asks you to. Use Home Assistant's Download diagnostics action before requesting support."
       }
     }
   }
