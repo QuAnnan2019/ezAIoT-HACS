@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from enum import StrEnum
 
+from homeassistant.components import persistent_notification
+from homeassistant.core import HomeAssistant
+
+from .const import DATA_RELEASE_SERVICE, DOMAIN, GUIDANCE_NOTIFICATION_ID
 from .models import CompatibilityState, DiscoveryResult
 from .release_models import UnsignedReleaseState
 
 _ZHA_CONFIGURATION = "zha:\n  custom_quirks_path: /config/zha_quirks"
+_LOGGER = logging.getLogger(__name__)
 
 
 class GuidanceCode(StrEnum):
@@ -42,6 +48,33 @@ def build_guidance(
     if release.installed_version is None:
         return _guidance(GuidanceCode.INSTALL_RELEASE)
     return _guidance(GuidanceCode.ACTIVE_COMPATIBILITY)
+
+
+def async_sync_guidance_notification(
+    hass: HomeAssistant,
+    discovery: DiscoveryResult,
+) -> Guidance:
+    """Refresh owned guidance notification without interrupting the integration."""
+    release = hass.data[DOMAIN][DATA_RELEASE_SERVICE].state
+    guidance = build_guidance(discovery, release)
+    try:
+        async_sync_notification(hass, guidance)
+    except Exception:  # pragma: no cover - Home Assistant storage boundary
+        _LOGGER.exception("Unable to synchronize ZHA setup guidance notification")
+    return guidance
+
+
+def async_sync_notification(hass: HomeAssistant, guidance: Guidance) -> None:
+    """Create or dismiss only the persistent notification owned by ezAIoT."""
+    if guidance.actionable:
+        persistent_notification.async_create(
+            hass,
+            guidance.message,
+            title=guidance.title,
+            notification_id=GUIDANCE_NOTIFICATION_ID,
+        )
+        return
+    persistent_notification.async_dismiss(hass, GUIDANCE_NOTIFICATION_ID)
 
 
 def _guidance(code: GuidanceCode) -> Guidance:

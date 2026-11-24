@@ -11,6 +11,7 @@ DATA_PANEL_STATIC_REGISTERED: Final = "ezaiot_panel_static_registered"
 DATA_WEBSOCKET_REGISTERED: Final = "ezaiot_websocket_registered"
 DATA_RELEASE_SERVICE: Final = "release_service"
 DATA_RELEASE_COORDINATOR: Final = "release_coordinator"
+GUIDANCE_NOTIFICATION_ID: Final = "ezaiot_zha_guidance"
 PLATFORMS: Final = ["sensor", "update"]
 PANEL_URL_PATH: Final = "ezaiot"
 PANEL_MODULE_URL: Final = "/ezaiot-panel/ezaiot-panel.js"

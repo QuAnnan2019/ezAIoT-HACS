@@ -1,6 +1,14 @@
 """Contracts for local ZHA setup guidance."""
 
-from custom_components.ezaiot.guidance import GuidanceCode, build_guidance
+from types import SimpleNamespace
+from unittest.mock import patch
+
+from custom_components.ezaiot.guidance import (
+    Guidance,
+    GuidanceCode,
+    async_sync_notification,
+    build_guidance,
+)
 from custom_components.ezaiot.models import CompatibilityState, DiscoveryResult
 from custom_components.ezaiot.release_models import ReleaseStatus, UnsignedReleaseState
 
@@ -61,3 +69,34 @@ def test_build_guidance_marks_active_compatibility_complete() -> None:
 
     assert guidance.code is GuidanceCode.ACTIVE_COMPATIBILITY
     assert guidance.actionable is False
+
+
+def test_actionable_guidance_creates_the_fixed_notification() -> None:
+    """All actionable states replace the same persistent notification."""
+    hass = SimpleNamespace()
+    guidance = Guidance(GuidanceCode.PAIR_DEVICE, "Set up ZHA", "Add YAML", True)
+
+    with patch(
+        "custom_components.ezaiot.guidance.persistent_notification.async_create"
+    ) as create:
+        async_sync_notification(hass, guidance)
+
+    create.assert_called_once_with(
+        hass,
+        "Add YAML",
+        title="Set up ZHA",
+        notification_id="ezaiot_zha_guidance",
+    )
+
+
+def test_active_guidance_dismisses_the_fixed_notification() -> None:
+    """Active compatibility clears only the notification owned by ezAIoT."""
+    hass = SimpleNamespace()
+    guidance = Guidance(GuidanceCode.ACTIVE_COMPATIBILITY, "Compatibility active", "", False)
+
+    with patch(
+        "custom_components.ezaiot.guidance.persistent_notification.async_dismiss"
+    ) as dismiss:
+        async_sync_notification(hass, guidance)
+
+    dismiss.assert_called_once_with(hass, "ezaiot_zha_guidance")
