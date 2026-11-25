@@ -9,7 +9,7 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DATA_COORDINATOR, DOMAIN, MODEL_ETRV_ZB01
+from .const import DATA_COORDINATOR, DOMAIN
 from .coordinator import EzaiotCoordinator
 
 
@@ -24,17 +24,17 @@ async def async_setup_entry(
 
 
 class EzaiotSupportedDevicesSensor(CoordinatorEntity[EzaiotCoordinator], SensorEntity):
-    """Expose the number of exact-match supported valves."""
+    """Expose the number of exact-match managed Quirk devices."""
 
     _attr_has_entity_name = True
-    _attr_icon = "mdi:radiator"
-    _attr_name = "Supported TRVZB devices"
+    _attr_icon = "mdi:zigbee"
+    _attr_name = "Supported managed Quirk devices"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, coordinator: EzaiotCoordinator, entry: ConfigEntry) -> None:
         """Initialize the aggregate sensor."""
         super().__init__(coordinator)
-        self._attr_unique_id = f"{entry.entry_id}_trvzb_supported_devices"
+        self._attr_unique_id = f"{entry.entry_id}_managed_quirk_devices"
 
     @property
     def native_value(self) -> int:
@@ -46,5 +46,5 @@ class EzaiotSupportedDevicesSensor(CoordinatorEntity[EzaiotCoordinator], SensorE
         """Expose only stable, non-identifying compatibility attributes."""
         return {
             "compatibility_state": self.coordinator.data.state.value,
-            "supported_model": MODEL_ETRV_ZB01,
+            "discovery_source": "managed_quirk_catalog",
         }

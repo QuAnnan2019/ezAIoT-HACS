@@ -55,9 +55,9 @@ def _release_payload() -> dict[str, object]:
         "assets": [
             {
                 "id": 1,
-                "name": "ezaiot-zha-etrv-zb01-v0.0.1.zip",
+                "name": "ezaiot-zha-managed-quirks-v0.0.1.zip",
                 "size": 12,
-                "browser_download_url": "https://github.com/QuAnnan2019/zigbee-quircks/releases/download/v0.0.1/ezaiot-zha-etrv-zb01-v0.0.1.zip",
+                "browser_download_url": "https://github.com/QuAnnan2019/zigbee-quircks/releases/download/v0.0.1/ezaiot-zha-managed-quirks-v0.0.1.zip",
             }
         ],
     }
@@ -73,7 +73,7 @@ def test_client_selects_only_the_expected_test_package() -> None:
     candidate = asyncio.run(UnsignedReleaseClient(session).async_fetch_latest())
 
     assert candidate.version == "0.0.1"
-    assert candidate.package.name == "ezaiot-zha-etrv-zb01-v0.0.1.zip"
+    assert candidate.package.name == "ezaiot-zha-managed-quirks-v0.0.1.zip"
     assert session.requests == [(RELEASE_API_URL, {"headers": {"Accept": "application/vnd.github+json"}})]
 
 

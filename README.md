@@ -5,14 +5,15 @@ This initial package provides the integration entry and a single-instance
 configuration flow. Device discovery and the application panel are developed
 as separate features.
 
-This test release can manually download and install the one exact ZHA Quirk
-package for Rti-Tek eTRV-ZB01 from the fixed GitHub Release source. It does
-not modify YAML, communicate with devices, deploy Zigbee2MQTT converters, or
-automatically restart Home Assistant.
+This test release can manually download and install the exact ZHA Quirk set
+declared by a fixed GitHub Release source. It does not modify YAML,
+communicate with devices, deploy Zigbee2MQTT converters, or automatically
+restart Home Assistant.
 
-The diagnostic sensor reports the number of exact-match ZHA devices. Use
-Home Assistant's native **Download diagnostics** action on the integration
-page to create a redacted support report.
+The diagnostic sensor reports the number of exact-match ZHA devices declared
+by the active managed Release. Use Home Assistant's native **Download
+diagnostics** action on the integration page to create a redacted support
+report.
 
 The `ezAIoT` sidebar panel displays local compatibility status and a manual
 test Release workflow. An administrator can check, install, and roll back one
@@ -31,11 +32,12 @@ ezAIoT-managed Release. Installing and rolling back require confirmation.
 ## Test Release Scope
 
 This test mode reads local device and entity registries for exact-match
-Rti-Tek eTRV-ZB01 devices and can contact the fixed GitHub Release source
-only when the update coordinator or an administrator requests a check.
+signatures declared by the active managed Release and can contact the fixed
+GitHub Release source only when the update coordinator or an administrator
+requests a check.
 
-The Release ZIP is installed directly in `/config/zha_quirks/`, so the current
-package creates `/config/zha_quirks/rti_tek_etrv_zb01.py`. Existing files are
+The Release ZIP is installed directly in `/config/zha_quirks/`. Its catalog
+names every managed Quirk file and exact device signature. Existing files are
 left untouched; a same-name file without the ezAIoT root version marker is not
 overwritten. The previous ezAIoT-managed files and metadata are retained in
 `/config/zha_quirks/.ezaiot-backup/` for one explicit rollback. Version

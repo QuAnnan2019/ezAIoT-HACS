@@ -21,7 +21,7 @@ from .websocket import async_register_websocket_commands
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up local TRVZB discovery for a config entry."""
+    """Set up local managed-Quirk discovery for a config entry."""
     if DOMAIN not in hass.data:
         await async_register_panel(hass)
         async_register_websocket_commands(hass)
@@ -34,7 +34,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             DATA_RELEASE_COORDINATOR: release_coordinator,
         }
 
-    coordinator = EzaiotCoordinator(hass)
+    coordinator = EzaiotCoordinator(hass, hass.data[DOMAIN][DATA_RELEASE_SERVICE])
     await coordinator.async_config_entry_first_refresh()
     hass.data[DOMAIN][entry.entry_id] = {
         DATA_COORDINATOR: coordinator,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 import stat
 import uuid
@@ -16,9 +17,21 @@ from .const import (
     RELEASE_MAX_FILE_COUNT,
     RELEASE_MAX_PACKAGE_BYTES,
 )
+from .managed_quirks import (
+    CATALOG_FILE_NAME,
+    ManagedQuirk,
+    ManagedQuirkCatalog,
+    ManagedQuirkCatalogError,
+    parse_catalog,
+)
 from .release_models import DeploymentState
 
 _VERSION_FILE = ".ezaiot-release-version"
+_CATALOG_METADATA_FILE = ".ezaiot-managed-quirks.json"
+_LEGACY_VERSIONS = {"0.0.1", "0.0.2"}
+_LEGACY_CATALOG = ManagedQuirkCatalog(
+    (ManagedQuirk("rti_tek_etrv_zb01.py", "Rti-Tek", "eTRV-ZB01"),)
+)
 
 
 class ReleaseDeploymentError(ValueError):
@@ -46,13 +59,20 @@ class UnsignedReleaseDeployer:
         try:
             stage_path.mkdir()
             self._extract(package, stage_path)
-            package_files = self._package_files(stage_path)
-            self._assert_targets_are_managed(package_files, previous_version, legacy_version)
+            package_catalog = self._parse_package_catalog(stage_path)
+            package_files = [Path(path) for path in package_catalog.files]
+            active_catalog = self._read_catalog(self._quirks_root, previous_version)
+            self._assert_targets_are_managed(
+                package_files, active_catalog, previous_version, legacy_version
+            )
             (stage_path / _VERSION_FILE).write_text(version, encoding="utf-8")
+            self._write_catalog(stage_path, package_catalog)
 
             if previous_version is not None:
                 self._replace_backup()
-                self._move_active_to_backup(package_files)
+                assert active_catalog is not None
+                self._write_catalog(self._quirks_root, active_catalog)
+                self._move_active_to_backup(active_catalog.files)
                 moved_current = True
             elif legacy_version is not None:
                 self._remove_backup()
@@ -61,7 +81,7 @@ class UnsignedReleaseDeployer:
                 self._activate(stage_path, package_files)
             except OSError as err:
                 if moved_current:
-                    self._restore_backup(package_files)
+                    self._restore_backup(active_catalog.files, package_catalog.files)
                 raise ReleaseDeploymentError("Unable to activate test Release") from err
 
             if legacy_version is not None:
@@ -77,6 +97,19 @@ class UnsignedReleaseDeployer:
             if stage_path.exists():
                 shutil.rmtree(stage_path)
 
+    def managed_quirks(self) -> tuple[ManagedQuirk, ...]:
+        """Return the exact signatures declared by the active managed Release."""
+        catalog = self._read_catalog(
+            self._quirks_root, self._read_version(self._quirks_root)
+        )
+        if catalog is None:
+            return ()
+        return tuple(
+            quirk
+            for quirk in catalog.quirks
+            if (self._quirks_root / quirk.file).is_file()
+        )
+
     def rollback(self) -> DeploymentState:
         """Restore the last ezAIoT-managed root files from the backup."""
         if not self._backup_path.is_dir() or self._backup_path.is_symlink():
@@ -87,28 +120,40 @@ class UnsignedReleaseDeployer:
             raise ReleaseDeploymentError("No test Release backup is available")
 
         stage_path = self._quirks_root / f".ezaiot-rollback-{uuid.uuid4().hex}"
-        backup_files = self._package_files(self._backup_path)
+        active_catalog = self._read_catalog(self._quirks_root, active_version)
+        backup_catalog = self._read_catalog(self._backup_path, backup_version)
+        if active_catalog is None or backup_catalog is None:
+            raise ReleaseDeploymentError("No test Release backup is available")
         try:
             stage_path.mkdir()
-            for relative_path in backup_files:
+            for relative_path in active_catalog.files:
                 target = self._quirks_root / relative_path
                 if target.exists():
                     target.replace(stage_path / relative_path)
             (self._quirks_root / _VERSION_FILE).replace(stage_path / _VERSION_FILE)
+            (self._quirks_root / _CATALOG_METADATA_FILE).replace(
+                stage_path / _CATALOG_METADATA_FILE
+            )
 
-            for relative_path in backup_files:
+            for relative_path in backup_catalog.files:
                 (self._backup_path / relative_path).replace(
                     self._quirks_root / relative_path
                 )
             (self._backup_path / _VERSION_FILE).replace(
                 self._quirks_root / _VERSION_FILE
             )
+            (self._backup_path / _CATALOG_METADATA_FILE).replace(
+                self._quirks_root / _CATALOG_METADATA_FILE
+            )
 
-            for relative_path in backup_files:
+            for relative_path in active_catalog.files:
                 staged_file = stage_path / relative_path
                 if staged_file.exists():
                     staged_file.replace(self._backup_path / relative_path)
             (stage_path / _VERSION_FILE).replace(self._backup_path / _VERSION_FILE)
+            (stage_path / _CATALOG_METADATA_FILE).replace(
+                self._backup_path / _CATALOG_METADATA_FILE
+            )
 
             return DeploymentState(
                 installed_version=backup_version,
@@ -133,17 +178,22 @@ class UnsignedReleaseDeployer:
     def _assert_targets_are_managed(
         self,
         package_files: list[Path],
+        active_catalog: ManagedQuirkCatalog | None,
         previous_version: str | None,
         legacy_version: str | None,
     ) -> None:
         """Refuse to replace a root Quirk without an ezAIoT ownership marker."""
-        if previous_version is not None:
-            return
+        active_files = set(active_catalog.files) if active_catalog else set()
         for relative_path in package_files:
-            if (self._quirks_root / relative_path).exists():
+            if (
+                (self._quirks_root / relative_path).exists()
+                and relative_path.name not in active_files
+            ):
                 raise ReleaseDeploymentError(
                     "Refusing to replace a root Quirk that is not ezAIoT-managed"
                 )
+        if previous_version is not None:
+            return
         if self._legacy_path.exists() and legacy_version is None:
             raise ReleaseDeploymentError("Legacy managed directory has no version marker")
 
@@ -160,33 +210,48 @@ class UnsignedReleaseDeployer:
             raise ReleaseDeploymentError("Managed backup must not be a symbolic link")
         shutil.rmtree(self._backup_path)
 
-    def _move_active_to_backup(self, package_files: list[Path]) -> None:
-        """Move only incoming ezAIoT file names and the root version marker to backup."""
-        for relative_path in package_files:
+    def _move_active_to_backup(self, files: tuple[str, ...]) -> None:
+        """Move all active managed files and metadata to the single backup."""
+        for file in files:
+            relative_path = Path(file)
             target = self._quirks_root / relative_path
             if target.exists():
                 target.replace(self._backup_path / relative_path)
         (self._quirks_root / _VERSION_FILE).replace(self._backup_path / _VERSION_FILE)
+        (self._quirks_root / _CATALOG_METADATA_FILE).replace(
+            self._backup_path / _CATALOG_METADATA_FILE
+        )
 
     def _activate(self, stage_path: Path, package_files: list[Path]) -> None:
         """Move staged files and their ownership marker into the Quirk root."""
         for relative_path in package_files:
             (stage_path / relative_path).replace(self._quirks_root / relative_path)
         (stage_path / _VERSION_FILE).replace(self._quirks_root / _VERSION_FILE)
+        (stage_path / _CATALOG_METADATA_FILE).replace(
+            self._quirks_root / _CATALOG_METADATA_FILE
+        )
 
-    def _restore_backup(self, package_files: list[Path]) -> None:
+    def _restore_backup(
+        self, active_files: tuple[str, ...], package_files: tuple[str, ...]
+    ) -> None:
         """Restore the active release after an activation failure."""
-        for relative_path in package_files:
+        for file in package_files:
+            relative_path = Path(file)
             target = self._quirks_root / relative_path
             if target.exists():
                 target.unlink()
+        for file in active_files:
+            relative_path = Path(file)
             backup_file = self._backup_path / relative_path
             if backup_file.exists():
-                backup_file.replace(target)
+                backup_file.replace(self._quirks_root / relative_path)
         version_file = self._quirks_root / _VERSION_FILE
         if version_file.exists():
             version_file.unlink()
         (self._backup_path / _VERSION_FILE).replace(version_file)
+        (self._backup_path / _CATALOG_METADATA_FILE).replace(
+            self._quirks_root / _CATALOG_METADATA_FILE
+        )
 
     def _extract(self, package: bytes, stage_path: Path) -> None:
         """Extract bounded, regular root files below the staging directory."""
@@ -219,12 +284,45 @@ class UnsignedReleaseDeployer:
                     raise ReleaseDeploymentError("Invalid test package file")
                 (stage_path / path).write_bytes(contents)
 
+    def _parse_package_catalog(self, directory: Path) -> ManagedQuirkCatalog:
+        package_files = {path.name for path in directory.iterdir()}
+        try:
+            return parse_catalog(
+                (directory / CATALOG_FILE_NAME).read_bytes(), package_files
+            )
+        except (OSError, ManagedQuirkCatalogError) as err:
+            raise ReleaseDeploymentError("Invalid managed Quirk catalog") from err
+
+    def _read_catalog(
+        self, directory: Path, version: str | None
+    ) -> ManagedQuirkCatalog | None:
+        if version is None:
+            return None
+        metadata = directory / _CATALOG_METADATA_FILE
+        if not metadata.exists():
+            if version in _LEGACY_VERSIONS:
+                return _LEGACY_CATALOG
+            raise ReleaseDeploymentError("Missing managed Quirk metadata")
+        try:
+            return parse_catalog(metadata.read_bytes())
+        except (OSError, ManagedQuirkCatalogError) as err:
+            raise ReleaseDeploymentError("Invalid managed Quirk metadata") from err
+
     @staticmethod
-    def _package_files(directory: Path) -> list[Path]:
-        """List flat package files, excluding the ezAIoT version marker."""
-        return sorted(
-            (Path(path.name) for path in directory.iterdir() if path.name != _VERSION_FILE),
-            key=lambda path: path.name,
+    def _write_catalog(directory: Path, catalog: ManagedQuirkCatalog) -> None:
+        payload = {
+            "schema_version": 1,
+            "quirks": [
+                {
+                    "file": quirk.file,
+                    "manufacturer": quirk.manufacturer,
+                    "model": quirk.model,
+                }
+                for quirk in catalog.quirks
+            ],
+        }
+        (directory / _CATALOG_METADATA_FILE).write_text(
+            json.dumps(payload, separators=(",", ":")), encoding="utf-8"
         )
 
     @staticmethod

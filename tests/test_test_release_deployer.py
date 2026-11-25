@@ -1,11 +1,13 @@
 """Filesystem contracts for the temporary ezAIoT Quirk deployer."""
 
 import io
+import json
 import zipfile
 from pathlib import Path
 
 import pytest
 
+from custom_components.ezaiot.managed_quirks import CATALOG_FILE_NAME
 from custom_components.ezaiot.release_deployer import (
     ReleaseDeploymentError,
     UnsignedReleaseDeployer,
@@ -13,10 +15,23 @@ from custom_components.ezaiot.release_deployer import (
 
 
 def _package(entries: list[tuple[str, bytes]]) -> bytes:
+    quirks = [
+        {
+            "file": path,
+            "manufacturer": "Rti-Tek",
+            "model": "eTRV-ZB01" if path == "rti_tek_etrv_zb01.py" else "STHZB",
+        }
+        for path, _ in entries
+        if path.endswith(".py") and "/" not in path and "\\" not in path
+    ]
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
         for path, contents in entries:
             archive.writestr(path, contents)
+        archive.writestr(
+            CATALOG_FILE_NAME,
+            json.dumps({"schema_version": 1, "quirks": quirks}),
+        )
     return buffer.getvalue()
 
 
@@ -56,6 +71,35 @@ def test_deployer_rolls_back_and_retains_the_replaced_version(tmp_path: Path) ->
     assert (
         quirks_root / ".ezaiot-backup" / "rti_tek_etrv_zb01.py"
     ).read_bytes() == b"second"
+
+
+def test_deployer_rolls_back_a_two_quirk_release_without_leaving_new_files(
+    tmp_path: Path,
+) -> None:
+    deployer = UnsignedReleaseDeployer(tmp_path)
+    deployer.deploy("0.0.2", _package([("rti_tek_etrv_zb01.py", b"old")]))
+    deployer.deploy(
+        "0.0.3",
+        _package(
+            [
+                ("rti_tek_etrv_zb01.py", b"new-etrv"),
+                ("rti_tek_sthzb.py", b"new-sthzb"),
+            ]
+        ),
+    )
+
+    state = deployer.rollback()
+
+    quirks_root = tmp_path / "zha_quirks"
+    assert state.installed_version == "0.0.2"
+    assert (quirks_root / "rti_tek_etrv_zb01.py").read_bytes() == b"old"
+    assert not (quirks_root / "rti_tek_sthzb.py").exists()
+    assert (
+        quirks_root / ".ezaiot-backup" / "rti_tek_etrv_zb01.py"
+    ).read_bytes() == b"new-etrv"
+    assert (
+        quirks_root / ".ezaiot-backup" / "rti_tek_sthzb.py"
+    ).read_bytes() == b"new-sthzb"
 
 
 def test_deployer_migrates_legacy_managed_directory_to_quirk_root(
