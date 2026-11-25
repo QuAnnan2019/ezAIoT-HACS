@@ -10,6 +10,7 @@ from typing import Any
 from homeassistant.helpers import aiohttp_client
 from homeassistant.helpers.storage import Store
 
+from .managed_quirks import ManagedQuirk
 from .release_client import ReleaseClientError, UnsignedReleaseClient
 from .release_deployer import ReleaseDeploymentError, UnsignedReleaseDeployer
 from .release_models import (
@@ -49,6 +50,7 @@ class UnsignedReleaseService:
         )
         self._lock = asyncio.Lock()
         self._candidate: UnsignedReleaseCandidate | None = None
+        self._managed_quirks: tuple[ManagedQuirk, ...] = ()
         self._state = UnsignedReleaseState(
             status=ReleaseStatus.NO_RELEASE,
             installed_version=None,
@@ -64,9 +66,17 @@ class UnsignedReleaseService:
         """Return state without exposing local paths or remote asset metadata."""
         return self._state
 
+    @property
+    def managed_quirks(self) -> tuple[ManagedQuirk, ...]:
+        """Return only active Release signatures, never local file paths."""
+        return self._managed_quirks
+
     async def async_initialize(self) -> UnsignedReleaseState:
         """Load the minimal persisted installation record."""
         stored = await self._store.async_load() or {}
+        self._managed_quirks = await self._hass.async_add_executor_job(
+            self._deployer.managed_quirks
+        )
         installed_version = self._stored_version(stored, "installed_version")
         backup_version = self._stored_version(stored, "backup_version")
         self._state = UnsignedReleaseState(
@@ -140,6 +150,9 @@ class UnsignedReleaseService:
                 )
                 return self._state
             await self._persist(deployed)
+            self._managed_quirks = await self._hass.async_add_executor_job(
+                self._deployer.managed_quirks
+            )
             self._candidate = None
             self._state = UnsignedReleaseState(
                 status=ReleaseStatus.UP_TO_DATE,
@@ -167,6 +180,9 @@ class UnsignedReleaseService:
                 )
                 return self._state
             await self._persist(deployed)
+            self._managed_quirks = await self._hass.async_add_executor_job(
+                self._deployer.managed_quirks
+            )
             self._state = UnsignedReleaseState(
                 status=ReleaseStatus.UP_TO_DATE,
                 installed_version=deployed.installed_version,

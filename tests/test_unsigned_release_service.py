@@ -57,6 +57,9 @@ class FakeDeployer:
         self.rollbacks += 1
         return DeploymentState("0.0.1", "0.0.2", None, None)
 
+    def managed_quirks(self) -> tuple[object, ...]:
+        return ()
+
 
 async def _run_in_executor(func: object, *args: object) -> object:
     assert callable(func)
@@ -66,7 +69,7 @@ async def _run_in_executor(func: object, *args: object) -> object:
 def _candidate(version: str = "0.0.2") -> UnsignedReleaseCandidate:
     return UnsignedReleaseCandidate(
         version=version,
-        package=ReleaseAsset(1, f"ezaiot-zha-etrv-zb01-v{version}.zip", 7, "url"),
+        package=ReleaseAsset(1, f"ezaiot-zha-managed-quirks-v{version}.zip", 7, "url"),
         release_notes="Test change.",
         release_url="",
     )

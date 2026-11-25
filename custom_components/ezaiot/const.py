@@ -4,7 +4,7 @@ from datetime import timedelta
 from typing import Final
 
 DOMAIN: Final = "ezaiot"
-INTEGRATION_VERSION: Final = "0.1.0"
+INTEGRATION_VERSION: Final = "0.1.1"
 DATA_COORDINATOR: Final = "coordinator"
 DATA_PANEL_REGISTERED: Final = "ezaiot_panel_registered"
 DATA_PANEL_STATIC_REGISTERED: Final = "ezaiot_panel_static_registered"
@@ -25,7 +25,7 @@ RELEASE_API_URL: Final = (
 )
 RELEASE_MANIFEST_NAME: Final = "ezaiot-quirks-manifest-v1.json"
 RELEASE_SIGNATURE_NAME: Final = "ezaiot-quirks-manifest-v1.json.sig"
-RELEASE_PACKAGE_PREFIX: Final = "ezaiot-zha-etrv-zb01-v"
+RELEASE_PACKAGE_PREFIX: Final = "ezaiot-zha-managed-quirks-v"
 RELEASE_MANAGED_DIRECTORY: Final = "ezaiot"
 RELEASE_BACKUP_DIRECTORY: Final = ".ezaiot-backup"
 RELEASE_MAX_PACKAGE_BYTES: Final = 2 * 1024 * 1024

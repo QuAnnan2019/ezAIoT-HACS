@@ -85,14 +85,14 @@ def _guidance(code: GuidanceCode) -> Guidance:
             title="Set up ZHA before pairing",
             message=(
                 f"Add this to configuration.yaml:\n{_ZHA_CONFIGURATION}\n\n"
-                "Restart Home Assistant, then pair the eTRV-ZB01 device."
+                "Restart Home Assistant, then pair a device supported by the managed Quirk Release."
             ),
             actionable=True,
         )
     if code is GuidanceCode.INSTALL_RELEASE:
         return Guidance(
             code=code,
-            title="Install the eTRV-ZB01 Quirk",
+            title="Install the managed Quirk Release",
             message=(
                 f"Confirm configuration.yaml contains:\n{_ZHA_CONFIGURATION}\n\n"
                 "Restart Home Assistant, install the approved Quirk Release, then "
@@ -113,7 +113,7 @@ def _guidance(code: GuidanceCode) -> Guidance:
         )
     return Guidance(
         code=code,
-        title="eTRV-ZB01 compatibility is active",
+        title="Managed Quirk compatibility is active",
         message="The managed Quirk is active. Advanced device capabilities are not enabled yet.",
         actionable=False,
     )

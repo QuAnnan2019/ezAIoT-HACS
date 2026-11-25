@@ -27,7 +27,7 @@ def _public_key_b64(private_key: Ed25519PrivateKey) -> str:
 
 
 def _manifest_bytes(package: bytes, **overrides: object) -> bytes:
-    package_name = "ezaiot-zha-etrv-zb01-v0.0.1.zip"
+    package_name = "ezaiot-zha-managed-quirks-v0.0.1.zip"
     payload: dict[str, object] = {
         "schema_version": 1,
         "release_version": "0.0.1",
@@ -53,7 +53,7 @@ def _manifest_for_files(files: tuple[PackageFile, ...], package: bytes) -> Relea
         platform="zha",
         manufacturer="Rti-Tek",
         model="eTRV-ZB01",
-        package_name="ezaiot-zha-etrv-zb01-v0.0.1.zip",
+        package_name="ezaiot-zha-managed-quirks-v0.0.1.zip",
         package_size=len(package),
         package_sha256=hashlib.sha256(package).hexdigest(),
         files=files,
