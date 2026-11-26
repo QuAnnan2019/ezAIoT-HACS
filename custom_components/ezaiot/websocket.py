@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import logging
+from types import SimpleNamespace
+
 import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
@@ -15,10 +18,13 @@ from .const import (
     INTEGRATION_VERSION,
 )
 from .coordinator import EzaiotCoordinator
+from .diagnostics import async_build_diagnostics
 from .guidance import Guidance, async_sync_guidance_notification, build_guidance
 from .models import CompatibilityState, DiscoveryResult
 from .release_models import UnsignedReleaseState
 from .release_service import UnsignedReleaseService
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def _release_state_payload(state: UnsignedReleaseState) -> dict[str, object]:
@@ -48,6 +54,14 @@ def _guidance_payload(guidance: Guidance) -> dict[str, object]:
 def _release_service(hass: HomeAssistant) -> UnsignedReleaseService:
     """Return the singleton service after integration setup is complete."""
     return hass.data[DOMAIN][DATA_RELEASE_SERVICE]
+
+
+def _diagnostics_entry(hass: HomeAssistant) -> SimpleNamespace:
+    """Return the active entry reference without exposing its identifier."""
+    for entry_id, entry_data in hass.data.get(DOMAIN, {}).items():
+        if isinstance(entry_data, dict) and DATA_COORDINATOR in entry_data:
+            return SimpleNamespace(entry_id=entry_id)
+    raise ValueError("No active ezAIoT config entry")
 
 
 def _set_release_state(hass: HomeAssistant, state: UnsignedReleaseState) -> None:
@@ -104,6 +118,28 @@ async def websocket_get_status(
 
 
 @websocket_api.require_admin
+@websocket_api.websocket_command(
+    {vol.Required("type"): "ezaiot/download_diagnostics"}
+)
+@websocket_api.async_response
+async def websocket_download_diagnostics(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, object],
+) -> None:
+    """Return the native diagnostics payload for local panel download."""
+    try:
+        payload = await async_build_diagnostics(hass, _diagnostics_entry(hass))
+    except (AttributeError, KeyError, TypeError, ValueError):
+        _LOGGER.exception("Unable to build ezAIoT diagnostics")
+        connection.send_error(
+            msg["id"], "diagnostics_failed", "Unable to build diagnostics."
+        )
+        return
+    connection.send_result(msg["id"], payload)
+
+
+@websocket_api.require_admin
 @websocket_api.websocket_command({vol.Required("type"): "ezaiot/check_release"})
 @websocket_api.async_response
 async def websocket_check_release(
@@ -154,6 +190,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     if hass.data.get(DATA_WEBSOCKET_REGISTERED):
         return
     websocket_api.async_register_command(hass, websocket_get_status)
+    websocket_api.async_register_command(hass, websocket_download_diagnostics)
     websocket_api.async_register_command(hass, websocket_check_release)
     websocket_api.async_register_command(hass, websocket_install_release)
     websocket_api.async_register_command(hass, websocket_rollback_release)
