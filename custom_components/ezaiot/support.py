@@ -17,3 +17,13 @@ def support_placeholders() -> dict[str, str]:
         "tutorial_playlist": TUTORIAL_PLAYLIST_URL or _UNCONFIGURED_RESOURCE,
         "review": REVIEW_URL or _UNCONFIGURED_RESOURCE,
     }
+
+
+def support_resources() -> dict[str, str | None]:
+    """Return only public support destinations for the local panel."""
+    return {
+        "email": SUPPORT_EMAIL,
+        "documentation_url": "https://github.com/QuAnnan2019/ezAIoT-HACS#readme",
+        "tutorial_url": TUTORIAL_PLAYLIST_URL,
+        "review_url": REVIEW_URL,
+    }

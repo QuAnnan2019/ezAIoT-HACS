@@ -80,12 +80,20 @@ class EzaiotPanel extends HTMLElement {
     }
   }
 
+  async _dismissCompletion() {
+    if (!this._hass) return;
+    await this._hass.callWS({ type: "ezaiot/dismiss_completion" });
+    await this._loadStatus(true);
+  }
+
   _render() {
     if (!this.shadowRoot) return;
 
     const status = this._status;
     const release = status?.update_source;
     const guidance = status?.guidance;
+    const support = status?.support;
+    const onboarding = status?.onboarding;
     const isAdmin = this._hass?.user?.is_admin === true;
     const actionInProgress = Boolean(this._releaseAction);
     const hasBackup = Boolean(release?.backup_version);
@@ -130,6 +138,8 @@ class EzaiotPanel extends HTMLElement {
         .wide { grid-column: 1 / -1; }
         a { color: var(--primary-color); text-decoration: none; }
         .error { color: var(--error-color); margin-top: 12px; }
+        .dialog-backdrop { align-items: center; background: color-mix(in srgb, #000 45%, transparent); display: flex; inset: 0; justify-content: center; padding: 20px; position: fixed; z-index: 10; }
+        .dialog { background: var(--card-background-color, var(--primary-background-color)); border-radius: 8px; max-width: 520px; padding: 24px; width: 100%; }
       </style>
       <main>
         <header>
@@ -141,10 +151,10 @@ class EzaiotPanel extends HTMLElement {
         </header>
         <div class="grid">
           <section class="wide guidance ${guidance?.actionable ? "warning" : "state"}">
-            <h2>ZHA setup</h2>
+            <h2>Guided Quirk setup</h2>
             <strong>${this._escape(guidance?.title || "Loading guidance...")}</strong>
             <pre>zha:
-  custom_quirks_path: /config/zha_quirks</pre>
+  custom_quirks_path: /config/zha_quirks/ezaiot/</pre>
             <p class="guidance-message">${this._escape(guidance?.message || "")}</p>
             <p class="muted" style="margin-top:12px">This setting is manual. After an update, Reconfigure or re-pair when guidance asks you to.</p>
           </section>
@@ -154,7 +164,7 @@ class EzaiotPanel extends HTMLElement {
             <p class="${status && status.supported_count > 0 ? "state" : "muted"}">${status && status.supported_count > 0 ? "Exact-match ZHA devices found" : "Rti-Tek eTRV-ZB01 exact matches only"}</p>
           </section>
           <section>
-            <h2>Quirk updates</h2>
+            <h2>Approved Quirk Release</h2>
             <p class="${release?.state === "update_available" ? "state" : "warning"}">${this._escape(release?.message || "Loading test Release status...")}</p>
             ${release?.test_mode ? "<p class=\"test-mode\">Unsigned test mode</p>" : ""}
             ${release?.available_version ? `<p class="muted">Installed: ${this._escape(release.installed_version || "none")} · Available: ${this._escape(release.available_version)}</p>` : ""}
@@ -162,8 +172,8 @@ class EzaiotPanel extends HTMLElement {
             ${release?.restart_required ? "<p class=\"warning\" style=\"margin-top:12px\">Restart Home Assistant after deployment to load the Quirk.</p>" : ""}
             ${isAdmin ? `
               <div class="release-actions">
-                <button data-release-action="ezaiot/check_release" ${actionInProgress ? "disabled" : ""}>Check release</button>
-                <button class="primary" data-release-action="ezaiot/install_release" ${!canInstall || actionInProgress ? "disabled" : ""}>Install update</button>
+                <button data-release-action="ezaiot/check_release" ${actionInProgress ? "disabled" : ""}>Check approved Release</button>
+                <button class="primary" data-release-action="ezaiot/install_release" ${!canInstall || actionInProgress ? "disabled" : ""}>Install approved Quirk</button>
                 <button data-release-action="ezaiot/rollback_release" ${!hasBackup || actionInProgress ? "disabled" : ""}>Rollback</button>
               </div>` : ""}
           </section>
@@ -176,11 +186,15 @@ class EzaiotPanel extends HTMLElement {
             <p>Download the same redacted diagnostics used by Home Assistant before requesting support.</p>
             ${isAdmin ? `
               <div class="release-actions">
-                <button data-diagnostics-action="download" ${this._diagnosticsAction ? "disabled" : ""}>Download diagnostics</button>
+                <button data-diagnostics-action="download" ${this._diagnosticsAction ? "disabled" : ""}>Download ZHA diagnostics</button>
               </div>` : ""}
-            <p class="muted" style="margin-top:12px">Home Assistant's native diagnostics remain available from the ezAIoT integration card.</p>
+            <h2 style="margin-top:24px">Technical support</h2>
+            <p><a href="mailto:${this._escape(support?.email || "support@ezaiot.com")}">${this._escape(support?.email || "support@ezaiot.com")}</a></p>
+            ${support?.documentation_url ? `<p style="margin-top:12px"><a href="${this._escape(support.documentation_url)}" target="_blank" rel="noreferrer">Documentation</a></p>` : ""}
+            <p class="muted" style="margin-top:12px">Tutorial and review links will appear here when configured.</p>
           </section>
         </div>
+        ${onboarding?.show_completion ? `<div class="dialog-backdrop" role="dialog" aria-modal="true" aria-label="Setup complete"><div class="dialog"><h2>Setup complete</h2><p>The managed Quirk is active for a supported ZHA device.</p><p class="muted" style="margin-top:12px">Use Download ZHA diagnostics or Technical support if you need help. The review page is not available yet.</p><div class="release-actions"><button class="primary" data-dismiss-completion="true">Continue</button><button disabled>Review page coming soon</button></div></div></div>` : ""}
         ${this._error ? `<p class="error">${this._error}</p>` : ""}
       </main>
     `;
@@ -188,8 +202,10 @@ class EzaiotPanel extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-release-action]").forEach((button) => {
       button.addEventListener("click", () => {
         const type = button.dataset.releaseAction;
-        const confirmation = type === "ezaiot/install_release"
-          ? "Install this unsigned test Release? Home Assistant must be restarted afterwards."
+        const confirmation = type === "ezaiot/check_release"
+          ? "Check the fixed approved Release source? No files will be changed during this check."
+          : type === "ezaiot/install_release"
+          ? "Install this approved Quirk Release? Only managed files in /config/zha_quirks/ezaiot/ will be replaced and one backup retained. Home Assistant must be restarted afterwards."
           : type === "ezaiot/rollback_release"
             ? "Restore the previous unsigned test Release? Home Assistant must be restarted afterwards."
             : null;
@@ -199,6 +215,10 @@ class EzaiotPanel extends HTMLElement {
     this.shadowRoot.querySelector("[data-diagnostics-action]")?.addEventListener(
       "click",
       () => this._downloadDiagnostics(),
+    );
+    this.shadowRoot.querySelector("[data-dismiss-completion]")?.addEventListener(
+      "click",
+      () => this._dismissCompletion(),
     );
   }
 }

@@ -51,9 +51,9 @@ def test_deployer_installs_to_configured_quirk_root_and_keeps_user_files(
     assert second.installed_version == "0.0.2"
     assert second.backup_version == "0.0.1"
     assert user_quirk.read_text(encoding="utf-8") == "user"
-    assert (quirks_root / "rti_tek_etrv_zb01.py").read_bytes() == b"second"
+    assert (quirks_root / "ezaiot" / "rti_tek_etrv_zb01.py").read_bytes() == b"second"
     assert (
-        quirks_root / ".ezaiot-backup" / "rti_tek_etrv_zb01.py"
+        quirks_root / "ezaiot" / ".ezaiot-backup" / "rti_tek_etrv_zb01.py"
     ).read_bytes() == b"first"
 
 
@@ -67,9 +67,9 @@ def test_deployer_rolls_back_and_retains_the_replaced_version(tmp_path: Path) ->
     quirks_root = tmp_path / "zha_quirks"
     assert state.installed_version == "0.0.1"
     assert state.backup_version == "0.0.2"
-    assert (quirks_root / "rti_tek_etrv_zb01.py").read_bytes() == b"first"
+    assert (quirks_root / "ezaiot" / "rti_tek_etrv_zb01.py").read_bytes() == b"first"
     assert (
-        quirks_root / ".ezaiot-backup" / "rti_tek_etrv_zb01.py"
+        quirks_root / "ezaiot" / ".ezaiot-backup" / "rti_tek_etrv_zb01.py"
     ).read_bytes() == b"second"
 
 
@@ -92,47 +92,36 @@ def test_deployer_rolls_back_a_two_quirk_release_without_leaving_new_files(
 
     quirks_root = tmp_path / "zha_quirks"
     assert state.installed_version == "0.0.2"
-    assert (quirks_root / "rti_tek_etrv_zb01.py").read_bytes() == b"old"
-    assert not (quirks_root / "rti_tek_sthzb.py").exists()
+    assert (quirks_root / "ezaiot" / "rti_tek_etrv_zb01.py").read_bytes() == b"old"
+    assert not (quirks_root / "ezaiot" / "rti_tek_sthzb.py").exists()
     assert (
-        quirks_root / ".ezaiot-backup" / "rti_tek_etrv_zb01.py"
+        quirks_root / "ezaiot" / ".ezaiot-backup" / "rti_tek_etrv_zb01.py"
     ).read_bytes() == b"new-etrv"
     assert (
-        quirks_root / ".ezaiot-backup" / "rti_tek_sthzb.py"
+        quirks_root / "ezaiot" / ".ezaiot-backup" / "rti_tek_sthzb.py"
     ).read_bytes() == b"new-sthzb"
 
 
-def test_deployer_migrates_legacy_managed_directory_to_quirk_root(
+def test_deployer_replaces_owned_package_in_managed_directory(
     tmp_path: Path,
 ) -> None:
     quirks_root = tmp_path / "zha_quirks"
-    legacy_path = quirks_root / "ezaiot"
-    legacy_path.mkdir(parents=True)
-    (legacy_path / "rti_tek_etrv_zb01.py").write_bytes(b"legacy")
-    (legacy_path / ".ezaiot-release-version").write_text("0.0.1", encoding="utf-8")
-
-    state = UnsignedReleaseDeployer(tmp_path).deploy(
-        "0.0.2",
-        _package([("rti_tek_etrv_zb01.py", b"fixed")]),
-    )
-
-    assert state.installed_version == "0.0.2"
-    assert state.backup_version is None
-    assert (quirks_root / "rti_tek_etrv_zb01.py").read_bytes() == b"fixed"
-    assert not legacy_path.exists()
+    deployer = UnsignedReleaseDeployer(tmp_path)
+    deployer.deploy("0.0.1", _package([("rti_tek_etrv_zb01.py", b"old")]))
+    state = deployer.deploy("0.0.2", _package([("rti_tek_etrv_zb01.py", b"new")]))
+    assert state.backup_version == "0.0.1"
+    assert (quirks_root / "ezaiot" / "rti_tek_etrv_zb01.py").read_bytes() == b"new"
 
 
-def test_deployer_does_not_overwrite_unmanaged_root_file(tmp_path: Path) -> None:
+def test_deployer_does_not_touch_unmanaged_parent_file(tmp_path: Path) -> None:
     quirks_root = tmp_path / "zha_quirks"
     quirks_root.mkdir()
     target = quirks_root / "rti_tek_etrv_zb01.py"
     target.write_bytes(b"user")
 
-    with pytest.raises(ReleaseDeploymentError, match="managed"):
-        UnsignedReleaseDeployer(tmp_path).deploy(
-            "0.0.1",
-            _package([("rti_tek_etrv_zb01.py", b"release")]),
-        )
+    UnsignedReleaseDeployer(tmp_path).deploy(
+        "0.0.1", _package([("rti_tek_etrv_zb01.py", b"release")])
+    )
 
     assert target.read_bytes() == b"user"
 

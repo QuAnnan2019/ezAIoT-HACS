@@ -11,6 +11,7 @@ from homeassistant.core import HomeAssistant, callback
 
 from .const import (
     DATA_COORDINATOR,
+    DATA_ONBOARDING_STATE,
     DATA_RELEASE_COORDINATOR,
     DATA_RELEASE_SERVICE,
     DATA_WEBSOCKET_REGISTERED,
@@ -23,6 +24,7 @@ from .guidance import Guidance, async_sync_guidance_notification, build_guidance
 from .models import CompatibilityState, DiscoveryResult
 from .release_models import UnsignedReleaseState
 from .release_service import UnsignedReleaseService
+from .support import support_resources
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -71,6 +73,21 @@ def _set_release_state(hass: HomeAssistant, state: UnsignedReleaseState) -> None
         coordinator.async_set_updated_data(state)
 
 
+async def _onboarding_payload(
+    hass: HomeAssistant, release_state: UnsignedReleaseState, supported_count: int
+) -> dict[str, object]:
+    """Return one-time completion state without exposing local details."""
+    onboarding = hass.data[DOMAIN][DATA_ONBOARDING_STATE]
+    return {
+        "show_completion": await onboarding.async_should_show_completion(
+            release_state.installed_version is not None,
+            release_state.restart_required,
+            supported_count,
+        ),
+        "review_url": support_resources()["review_url"],
+    }
+
+
 @websocket_api.websocket_command(
     {
         vol.Required("type"): "ezaiot/status",
@@ -113,8 +130,24 @@ async def websocket_get_status(
             "records": records,
             "guidance": _guidance_payload(build_guidance(discovery, release_state)),
             "update_source": _release_state_payload(release_state),
+            "onboarding": await _onboarding_payload(hass, release_state, len(records)),
+            "support": support_resources(),
         },
     )
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command({vol.Required("type"): "ezaiot/dismiss_completion"})
+@websocket_api.async_response
+async def websocket_dismiss_completion(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, object],
+) -> None:
+    """Persist dismissal of the successful guided-setup dialog."""
+    onboarding = hass.data[DOMAIN][DATA_ONBOARDING_STATE]
+    await onboarding.async_mark_completion_shown()
+    connection.send_result(msg["id"], {"show_completion": False, "review_url": None})
 
 
 @websocket_api.require_admin
@@ -190,6 +223,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     if hass.data.get(DATA_WEBSOCKET_REGISTERED):
         return
     websocket_api.async_register_command(hass, websocket_get_status)
+    websocket_api.async_register_command(hass, websocket_dismiss_completion)
     websocket_api.async_register_command(hass, websocket_download_diagnostics)
     websocket_api.async_register_command(hass, websocket_check_release)
     websocket_api.async_register_command(hass, websocket_install_release)

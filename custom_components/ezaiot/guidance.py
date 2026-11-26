@@ -13,7 +13,7 @@ from .const import DATA_RELEASE_SERVICE, DOMAIN, GUIDANCE_NOTIFICATION_ID
 from .models import CompatibilityState, DiscoveryResult
 from .release_models import UnsignedReleaseState
 
-_ZHA_CONFIGURATION = "zha:\n  custom_quirks_path: /config/zha_quirks"
+_ZHA_CONFIGURATION = "zha:\n  custom_quirks_path: /config/zha_quirks/ezaiot/"
 _LOGGER = logging.getLogger(__name__)
 
 
