@@ -7,7 +7,10 @@ from custom_components.ezaiot.const import (
     DATA_RELEASE_SERVICE,
     DOMAIN,
 )
-from custom_components.ezaiot.diagnostics import async_get_config_entry_diagnostics
+from custom_components.ezaiot.diagnostics import (
+    async_build_diagnostics,
+    async_get_config_entry_diagnostics,
+)
 from custom_components.ezaiot.models import (
     CompatibilityState,
     DiscoveryResult,
@@ -64,6 +67,7 @@ def test_diagnostics_contain_only_redacted_support_data(monkeypatch) -> None:
     )
 
     diagnostics = asyncio.run(async_get_config_entry_diagnostics(hass, entry))
+    shared_diagnostics = asyncio.run(async_build_diagnostics(hass, entry))
 
     assert diagnostics["compatibility_state"] == "supported"
     assert diagnostics["supported_devices"] == [
@@ -91,6 +95,7 @@ def test_diagnostics_contain_only_redacted_support_data(monkeypatch) -> None:
             ],
         }
     ]
+    assert shared_diagnostics == diagnostics
     serialized = json.dumps(diagnostics).lower()
     for forbidden_key in (
         "device_id",
