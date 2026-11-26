@@ -7,6 +7,7 @@
       }
     },
     "abort": {
+      "already_configured": "ezAIoT is already configured.",
       "single_instance_allowed": "ezAIoT is already configured."
     }
   },
