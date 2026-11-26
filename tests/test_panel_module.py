@@ -19,6 +19,10 @@ def test_panel_uses_only_local_websocket_commands() -> None:
     assert 'data-release-action="ezaiot/check_release"' in source
     assert 'data-release-action="ezaiot/install_release"' in source
     assert 'data-release-action="ezaiot/rollback_release"' in source
+    assert 'type: "ezaiot/download_diagnostics"' in source
+    assert "new Blob(" in source
+    assert "URL.createObjectURL" in source
+    assert "ezaiot-diagnostics.json" in source
     assert ".callWS(" in source
     assert "fetch(" not in source
     assert "github.com" not in source.lower()
@@ -37,6 +41,7 @@ def test_panel_renders_unsigned_test_release_controls() -> None:
     assert "custom_quirks_path: /config/zha_quirks" in source
     assert "Reconfigure or re-pair" in source
     assert "Diagnostics and help" in source
+    assert "Download diagnostics" in source
     assert 'customElements.define("ezaiot-panel", EzaiotPanel)' in source
 
 

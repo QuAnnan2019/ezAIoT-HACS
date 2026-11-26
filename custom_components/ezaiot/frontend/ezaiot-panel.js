@@ -53,6 +53,33 @@ class EzaiotPanel extends HTMLElement {
     }
   }
 
+  async _downloadDiagnostics() {
+    if (!this._hass || this._diagnosticsAction) return;
+
+    this._diagnosticsAction = true;
+    this._render();
+    try {
+      const diagnostics = await this._hass.callWS({
+        type: "ezaiot/download_diagnostics",
+      });
+      const blob = new Blob([JSON.stringify(diagnostics, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "ezaiot-diagnostics.json";
+      link.click();
+      URL.revokeObjectURL(url);
+      this._error = null;
+    } catch (error) {
+      this._error = "Unable to download local ezAIoT diagnostics.";
+    } finally {
+      this._diagnosticsAction = false;
+      this._render();
+    }
+  }
+
   _render() {
     if (!this.shadowRoot) return;
 
@@ -146,7 +173,12 @@ class EzaiotPanel extends HTMLElement {
           </section>
           <section class="wide">
             <h2>Diagnostics and help</h2>
-            <p>Use <a href="/config/integrations" target="_self">Settings → Devices & services</a> to open ezAIoT and download its native, redacted diagnostics before requesting support.</p>
+            <p>Download the same redacted diagnostics used by Home Assistant before requesting support.</p>
+            ${isAdmin ? `
+              <div class="release-actions">
+                <button data-diagnostics-action="download" ${this._diagnosticsAction ? "disabled" : ""}>Download diagnostics</button>
+              </div>` : ""}
+            <p class="muted" style="margin-top:12px">Home Assistant's native diagnostics remain available from the ezAIoT integration card.</p>
           </section>
         </div>
         ${this._error ? `<p class="error">${this._error}</p>` : ""}
@@ -164,6 +196,10 @@ class EzaiotPanel extends HTMLElement {
         this._runReleaseAction(type, confirmation);
       });
     });
+    this.shadowRoot.querySelector("[data-diagnostics-action]")?.addEventListener(
+      "click",
+      () => this._downloadDiagnostics(),
+    );
   }
 }
 
