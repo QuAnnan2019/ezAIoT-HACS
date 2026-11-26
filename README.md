@@ -12,8 +12,9 @@ restart Home Assistant.
 
 The diagnostic sensor reports the number of exact-match ZHA devices declared
 by the active managed Release. Use Home Assistant's native **Download
-diagnostics** action on the integration page to create a redacted support
-report.
+diagnostics** action on the ezAIoT integration page, or the administrator-only
+**Download diagnostics** action in the ezAIoT sidebar, to create the same
+redacted local support report.
 
 The `ezAIoT` sidebar panel displays local compatibility status and a manual
 test Release workflow. An administrator can check, install, and roll back one
@@ -27,7 +28,9 @@ ezAIoT-managed Release. Installing and rolling back require confirmation.
 3. Find **ezAIoT**, install it, and restart Home Assistant when prompted.
 4. Open **Settings > Devices & services > Add integration**, then add
    **ezAIoT**.
-5. Open **ezAIoT** from the sidebar to view local compatibility status.
+5. After restarting Home Assistant, find **ezAIoT** under
+   **Settings > Devices & services > Integrations**, or open **ezAIoT** from
+   the sidebar to view local compatibility status.
 
 ## Test Release Scope
 
