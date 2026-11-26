@@ -11,6 +11,9 @@ async def test_user_flow_creates_single_config_entry(
     with patch(
         "homeassistant.components.http.HomeAssistantHTTP.start",
         new=AsyncMock(),
+    ), patch(
+        "homeassistant.components.http.async_get_source_ip",
+        new=AsyncMock(return_value="127.0.0.1"),
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN,
@@ -29,6 +32,9 @@ async def test_second_user_flow_aborts(
     with patch(
         "homeassistant.components.http.HomeAssistantHTTP.start",
         new=AsyncMock(),
+    ), patch(
+        "homeassistant.components.http.async_get_source_ip",
+        new=AsyncMock(return_value="127.0.0.1"),
     ):
         await hass.config_entries.flow.async_init(
             DOMAIN,
