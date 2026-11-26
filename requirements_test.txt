@@ -1,3 +1,2 @@
 pytest-homeassistant-custom-component==0.13.205
-home-assistant-frontend==20250109.2
 ruff==0.17.5
