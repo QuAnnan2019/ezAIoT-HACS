@@ -7,6 +7,7 @@
       }
     },
     "abort": {
+      "already_configured": "ezAIoT 已配置。",
       "single_instance_allowed": "ezAIoT 已配置。"
     }
   },
@@ -14,7 +15,7 @@
     "step": {
       "init": {
         "title": "ezAIoT 支持",
-        "description": "请在 configuration.yaml 中配置 `zha: custom_quirks_path: /config/zha_quirks`，重启 Home Assistant 后，从 ezAIoT 侧边栏安装已审核的 Quirk Release；引导提示时请重新配置或重新配对设备。联系支持前请使用 Home Assistant 原生的下载诊断信息功能。"
+        "description": "技术支持：{support_email}\\n在线说明书：{documentation}\\nYouTube 教程播放列表：{tutorial_playlist}\\n评价页面：{review}\\n\\n显示 `—` 表示链接暂未配置。请在 configuration.yaml 中配置 `zha: custom_quirks_path: /config/zha_quirks`，重启 Home Assistant 后，从 ezAIoT 侧边栏安装已审核的 Quirk Release；引导提示时请重新配置或重新配对设备。联系支持前请使用 Home Assistant 原生的下载诊断信息功能。"
       }
     }
   }

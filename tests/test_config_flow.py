@@ -26,4 +26,4 @@ async def test_second_user_flow_aborts(hass):
     )
 
     assert result["type"] == "abort"
-    assert result["reason"] == "single_instance_allowed"
+    assert result["reason"] == "already_configured"

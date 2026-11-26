@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from custom_components.ezaiot.const import (
     DATA_COORDINATOR,
     DATA_RELEASE_SERVICE,
+    DATA_WEBSOCKET_REGISTERED,
     DOMAIN,
 )
 from custom_components.ezaiot.models import (
@@ -12,7 +13,11 @@ from custom_components.ezaiot.models import (
     SupportRecord,
 )
 from custom_components.ezaiot.release_models import ReleaseStatus, UnsignedReleaseState
-from custom_components.ezaiot.websocket import websocket_get_status
+from custom_components.ezaiot.websocket import (
+    async_register_websocket_commands,
+    websocket_download_diagnostics,
+    websocket_get_status,
+)
 
 
 class Connection:
@@ -99,3 +104,50 @@ def test_websocket_returns_redacted_panel_status() -> None:
             },
         },
     )
+
+
+def test_diagnostics_websocket_returns_shared_redacted_payload(monkeypatch) -> None:
+    """The panel command must reuse the native diagnostic contract."""
+    payload = {"integration_version": "0.1.1", "zha_devices": []}
+    hass = SimpleNamespace(
+        data={DOMAIN: {"entry-1": {DATA_COORDINATOR: object()}}}
+    )
+    connection = Connection()
+
+    async def build_diagnostics(received_hass, entry):
+        assert received_hass is hass
+        assert entry.entry_id == "entry-1"
+        return payload
+
+    monkeypatch.setattr(
+        "custom_components.ezaiot.websocket.async_build_diagnostics",
+        build_diagnostics,
+    )
+
+    asyncio.run(
+        websocket_download_diagnostics.__wrapped__.__wrapped__(
+            hass,
+            connection,
+            {"id": 8, "type": "ezaiot/download_diagnostics"},
+        )
+    )
+
+    assert connection.result == (8, payload)
+
+
+def test_registers_diagnostics_websocket_once(monkeypatch) -> None:
+    """The extra panel command follows the existing one-time registration rule."""
+    registered = []
+    hass = SimpleNamespace(data={})
+
+    monkeypatch.setattr(
+        "custom_components.ezaiot.websocket.websocket_api.async_register_command",
+        lambda _hass, command: registered.append(command),
+    )
+
+    async_register_websocket_commands(hass)
+    async_register_websocket_commands(hass)
+
+    assert websocket_download_diagnostics in registered
+    assert registered.count(websocket_download_diagnostics) == 1
+    assert hass.data[DATA_WEBSOCKET_REGISTERED] is True

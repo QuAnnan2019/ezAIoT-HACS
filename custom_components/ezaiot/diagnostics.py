@@ -9,17 +9,19 @@ from homeassistant.core import HomeAssistant
 from .const import DATA_COORDINATOR, DATA_RELEASE_SERVICE, DOMAIN, INTEGRATION_VERSION
 from .coordinator import EzaiotCoordinator
 from .release_service import UnsignedReleaseService
+from .zha_diagnostics import collect_zha_summaries, environment_versions
 
 
-async def async_get_config_entry_diagnostics(
+async def async_build_diagnostics(
     hass: HomeAssistant,
     entry: ConfigEntry,
 ) -> dict[str, object]:
-    """Return diagnostics without registry identifiers or raw device data."""
+    """Build redacted diagnostics shared by native and panel exports."""
     coordinator: EzaiotCoordinator = hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR]
     result = coordinator.data
     release_service: UnsignedReleaseService = hass.data[DOMAIN][DATA_RELEASE_SERVICE]
     release = release_service.state
+    managed_quirks = getattr(release_service, "managed_quirks", ())
     return {
         "integration_version": INTEGRATION_VERSION,
         "home_assistant_version": HA_VERSION,
@@ -40,4 +42,15 @@ async def async_get_config_entry_diagnostics(
             "available_version": release.available_version,
             "restart_required": release.restart_required,
         },
+        "environment": environment_versions(),
+        "managed_quirk_files": [quirk.file for quirk in managed_quirks],
+        "zha_devices": collect_zha_summaries(hass, managed_quirks),
     }
+
+
+async def async_get_config_entry_diagnostics(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+) -> dict[str, object]:
+    """Return diagnostics without registry identifiers or raw device data."""
+    return await async_build_diagnostics(hass, entry)

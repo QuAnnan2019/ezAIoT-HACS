@@ -7,6 +7,7 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 
 from .const import DOMAIN
+from .support import support_placeholders
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -36,4 +37,8 @@ class EzaiotOptionsFlow(config_entries.OptionsFlow):
         """Show a no-input Options page."""
         if user_input is not None:
             return self.async_create_entry(title="", data={})
-        return self.async_show_form(step_id="init", data_schema=vol.Schema({}))
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema({}),
+            description_placeholders=support_placeholders(),
+        )
