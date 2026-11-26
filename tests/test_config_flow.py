@@ -3,7 +3,9 @@ from homeassistant.config_entries import SOURCE_USER
 from custom_components.ezaiot.const import DOMAIN
 
 
-async def test_user_flow_creates_single_config_entry(hass):
+async def test_user_flow_creates_single_config_entry(
+    hass, enable_custom_integrations
+):
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_USER},
@@ -14,7 +16,7 @@ async def test_user_flow_creates_single_config_entry(hass):
     assert result["data"] == {}
 
 
-async def test_second_user_flow_aborts(hass):
+async def test_second_user_flow_aborts(hass, enable_custom_integrations):
     await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_USER},
