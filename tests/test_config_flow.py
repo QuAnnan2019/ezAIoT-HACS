@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from homeassistant.config_entries import SOURCE_USER
 
@@ -14,6 +14,9 @@ async def test_user_flow_creates_single_config_entry(
     ), patch(
         "homeassistant.components.http.async_get_source_ip",
         new=AsyncMock(return_value="127.0.0.1"),
+    ), patch(
+        "homeassistant.helpers.aiohttp_client.async_get_clientsession",
+        return_value=MagicMock(),
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN,
@@ -35,6 +38,9 @@ async def test_second_user_flow_aborts(
     ), patch(
         "homeassistant.components.http.async_get_source_ip",
         new=AsyncMock(return_value="127.0.0.1"),
+    ), patch(
+        "homeassistant.helpers.aiohttp_client.async_get_clientsession",
+        return_value=MagicMock(),
     ):
         await hass.config_entries.flow.async_init(
             DOMAIN,
