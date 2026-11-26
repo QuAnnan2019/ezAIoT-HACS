@@ -13,6 +13,7 @@ async def test_user_flow_creates_single_config_entry(
             DOMAIN,
             context={"source": SOURCE_USER},
         )
+        await hass.async_block_till_done()
 
     assert result["type"] == "create_entry"
     assert result["title"] == "ezAIoT"
@@ -32,6 +33,7 @@ async def test_second_user_flow_aborts(
             DOMAIN,
             context={"source": SOURCE_USER},
         )
+        await hass.async_block_till_done()
 
     assert result["type"] == "abort"
     assert result["reason"] == "already_configured"
