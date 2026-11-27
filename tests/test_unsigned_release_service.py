@@ -45,9 +45,10 @@ class FakeClient:
 class FakeDeployer:
     """Record synchronous deployment operations."""
 
-    def __init__(self) -> None:
+    def __init__(self, managed: bool = True) -> None:
         self.deployments: list[tuple[str, bytes]] = []
         self.rollbacks = 0
+        self.managed = managed
 
     def deploy(self, version: str, package: bytes) -> DeploymentState:
         self.deployments.append((version, package))
@@ -58,7 +59,7 @@ class FakeDeployer:
         return DeploymentState("0.0.1", "0.0.2", None, None)
 
     def managed_quirks(self) -> tuple[object, ...]:
-        return ()
+        return (object(),) if self.managed else ()
 
 
 async def _run_in_executor(func: object, *args: object) -> object:
@@ -112,6 +113,24 @@ def test_install_requires_a_checked_candidate() -> None:
     with pytest.raises(ValueError, match="checked"):
         asyncio.run(service.async_install())
     assert deployer.deployments == []
+
+
+def test_missing_managed_directory_allows_current_release_reinstall() -> None:
+    """A previous layout must not block an explicit install into the new root."""
+    store = FakeStore({"installed_version": "0.1.0", "backup_version": None})
+    deployer = FakeDeployer(managed=False)
+    service, _, _, _ = _service(
+        client=FakeClient(_candidate("0.1.0")), deployer=deployer, store=store
+    )
+
+    initial = asyncio.run(service.async_initialize())
+    checked = asyncio.run(service.async_check())
+    installed = asyncio.run(service.async_install())
+
+    assert initial.installed_version is None
+    assert checked.status is ReleaseStatus.UPDATE_AVAILABLE
+    assert installed.installed_version == "0.1.0"
+    assert deployer.deployments == [("0.1.0", b"package")]
 
 
 def test_rollback_requires_backup_and_swaps_persisted_versions() -> None:

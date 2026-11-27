@@ -28,3 +28,10 @@ def test_runtime_version_matches_manifest() -> None:
     """Diagnostics must report the version HACS installs."""
     manifest = json.loads(Path("custom_components/ezaiot/manifest.json").read_text())
     assert INTEGRATION_VERSION == manifest["version"]
+
+
+def test_panel_module_url_is_versioned() -> None:
+    """A HACS upgrade must load its matching panel module."""
+    from custom_components.ezaiot.const import PANEL_MODULE_URL
+
+    assert PANEL_MODULE_URL.endswith(f"?v={INTEGRATION_VERSION}")
