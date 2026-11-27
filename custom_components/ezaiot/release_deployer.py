@@ -46,6 +46,12 @@ class UnsignedReleaseDeployer:
         self._quirks_root = config_dir / "zha_quirks" / RELEASE_MANAGED_DIRECTORY
         self._backup_path = self._quirks_root / RELEASE_BACKUP_DIRECTORY
 
+    def ensure_managed_directory(self) -> None:
+        """Create the empty ezAIoT Quirk directory only when it is absent."""
+        if self._quirks_root.exists():
+            return
+        self._quirks_root.mkdir(parents=True)
+
     def deploy(self, version: str, package: bytes) -> DeploymentState:
         """Extract a flat package and activate its files at the Quirk root."""
         if not 0 < len(package) <= RELEASE_MAX_PACKAGE_BYTES:

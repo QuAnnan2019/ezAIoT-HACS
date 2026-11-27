@@ -19,6 +19,7 @@ def test_first_entry_registers_panel_websocket_and_coordinator() -> None:
     forward_setups = AsyncMock()
     hass = SimpleNamespace(
         data={},
+        async_add_executor_job=AsyncMock(),
         config_entries=SimpleNamespace(async_forward_entry_setups=forward_setups),
     )
     entry = SimpleNamespace(entry_id="entry-1")
@@ -46,6 +47,10 @@ def test_first_entry_registers_panel_websocket_and_coordinator() -> None:
 
     register_panel.assert_awaited_once_with(hass)
     register_ws.assert_called_once_with(hass)
+    hass.async_add_executor_job.assert_awaited_once_with(
+        service_type.return_value.ensure_managed_directory
+    )
+    service_type.return_value.async_initialize.assert_awaited_once_with()
     coordinator.async_config_entry_first_refresh.assert_awaited_once_with()
     assert hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR] is coordinator
     assert hass.data[DOMAIN][DATA_RELEASE_SERVICE] is service_type.return_value
