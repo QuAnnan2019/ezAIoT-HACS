@@ -16,9 +16,9 @@ diagnostics** action on the ezAIoT integration page, or the administrator-only
 **Download diagnostics** action in the ezAIoT sidebar, to create the same
 redacted local support report.
 
-The `ezAIoT` sidebar panel displays local compatibility status and a manual
-test Release workflow. An administrator can check, install, and roll back one
-ezAIoT-managed Release. Installing and rolling back require confirmation.
+The `ezAIoT` sidebar panel is the primary setup, diagnostics, and support
+entry. An administrator explicitly confirms each Release check, installation,
+or rollback; none of these actions happen automatically.
 
 ## Install from Marketplace
 
@@ -39,21 +39,28 @@ signatures declared by the active managed Release and can contact the fixed
 GitHub Release source only when the update coordinator or an administrator
 requests a check.
 
-The Release ZIP is installed directly in `/config/zha_quirks/`. Its catalog
-names every managed Quirk file and exact device signature. Existing files are
-left untouched; a same-name file without the ezAIoT root version marker is not
-overwritten. The previous ezAIoT-managed files and metadata are retained in
-`/config/zha_quirks/.ezaiot-backup/` for one explicit rollback. Version
-metadata is kept in the hidden root file `.ezaiot-release-version`, and the
-broken legacy `/config/zha_quirks/ezaiot/` layout is removed after a successful
-0.0.2 migration. After deploying or rolling back, configure ZHA's
-`custom_quirks_path` yourself if needed, restart Home Assistant, then
-reconfigure or re-pair the device as appropriate.
+Before installing a Release, configure ZHA manually:
+
+```yaml
+zha:
+  custom_quirks_path: /config/zha_quirks/ezaiot/
+```
+
+The Release ZIP is installed only in `/config/zha_quirks/ezaiot/`. Its catalog
+names every managed Quirk file and exact device signature. Files outside that
+directory are never changed. A newer confirmed Release replaces only files
+with ezAIoT ownership metadata in the managed directory and retains one
+previous managed package in `/config/zha_quirks/ezaiot/.ezaiot-backup/` for
+explicit rollback. Restart Home Assistant after deploying or rolling back,
+then reconfigure or re-pair the device when the guided setup requests it.
 
 The panel labels this feature **Unsigned test mode**. It intentionally does
 not yet verify a Release signature or package hash. Use it only with an
 isolated test Home Assistant instance. Before a public release, the signed
 manifest and package-validation path must replace this test workflow.
+
+Thread management and Thread network diagnostics are not included in this
+ZHA-only integration.
 
 ## Manual Development Installation
 

@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 from custom_components.ezaiot.const import (
     DATA_COORDINATOR,
+    DATA_ONBOARDING_STATE,
     DATA_RELEASE_SERVICE,
     DATA_WEBSOCKET_REGISTERED,
     DOMAIN,
@@ -18,6 +19,11 @@ from custom_components.ezaiot.websocket import (
     websocket_download_diagnostics,
     websocket_get_status,
 )
+
+
+class Onboarding:
+    async def async_should_show_completion(self, *_args) -> bool:
+        return True
 
 
 class Connection:
@@ -54,6 +60,7 @@ def test_websocket_returns_redacted_panel_status() -> None:
             DOMAIN: {
                 "entry-1": {DATA_COORDINATOR: SimpleNamespace(data=result)},
                 DATA_RELEASE_SERVICE: SimpleNamespace(state=release_state),
+                DATA_ONBOARDING_STATE: Onboarding(),
             }
         }
     )
@@ -70,7 +77,7 @@ def test_websocket_returns_redacted_panel_status() -> None:
     assert connection.result == (
         7,
         {
-                "integration_version": "0.1.1",
+                "integration_version": "0.2.0",
             "supported_count": 1,
             "records": [
                 {
@@ -86,7 +93,7 @@ def test_websocket_returns_redacted_panel_status() -> None:
                 "message": (
                     "Keep this in configuration.yaml:\n"
                     "zha:\n"
-                    "  custom_quirks_path: /config/zha_quirks\n\n"
+                    "  custom_quirks_path: /config/zha_quirks/ezaiot/\n\n"
                     "Restart Home Assistant to load the installed Quirk, then use "
                     "Reconfigure or re-pair the device."
                 ),
@@ -102,13 +109,20 @@ def test_websocket_returns_redacted_panel_status() -> None:
                 "message": "A test Release is ready to install.",
                 "test_mode": True,
             },
+            "onboarding": {"show_completion": True, "review_url": None},
+            "support": {
+                "email": "support@ezaiot.com",
+                "documentation_url": "https://github.com/QuAnnan2019/ezAIoT-HACS#readme",
+                "tutorial_url": None,
+                "review_url": None,
+            },
         },
     )
 
 
 def test_diagnostics_websocket_returns_shared_redacted_payload(monkeypatch) -> None:
     """The panel command must reuse the native diagnostic contract."""
-    payload = {"integration_version": "0.1.1", "zha_devices": []}
+    payload = {"integration_version": "0.2.0", "zha_devices": []}
     hass = SimpleNamespace(
         data={DOMAIN: {"entry-1": {DATA_COORDINATOR: object()}}}
     )

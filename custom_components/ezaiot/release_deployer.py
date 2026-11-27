@@ -43,8 +43,7 @@ class UnsignedReleaseDeployer:
 
     def __init__(self, config_dir: Path) -> None:
         """Initialize paths rooted at Home Assistant's configuration directory."""
-        self._quirks_root = config_dir / "zha_quirks"
-        self._legacy_path = self._quirks_root / RELEASE_MANAGED_DIRECTORY
+        self._quirks_root = config_dir / "zha_quirks" / RELEASE_MANAGED_DIRECTORY
         self._backup_path = self._quirks_root / RELEASE_BACKUP_DIRECTORY
 
     def deploy(self, version: str, package: bytes) -> DeploymentState:
@@ -54,7 +53,6 @@ class UnsignedReleaseDeployer:
         self._quirks_root.mkdir(parents=True, exist_ok=True)
         stage_path = self._quirks_root / f".ezaiot-stage-{uuid.uuid4().hex}"
         previous_version = self._read_version(self._quirks_root)
-        legacy_version = self._read_legacy_version()
         moved_current = False
         try:
             stage_path.mkdir()
@@ -63,7 +61,7 @@ class UnsignedReleaseDeployer:
             package_files = [Path(path) for path in package_catalog.files]
             active_catalog = self._read_catalog(self._quirks_root, previous_version)
             self._assert_targets_are_managed(
-                package_files, active_catalog, previous_version, legacy_version
+                package_files, active_catalog, previous_version
             )
             (stage_path / _VERSION_FILE).write_text(version, encoding="utf-8")
             self._write_catalog(stage_path, package_catalog)
@@ -74,18 +72,12 @@ class UnsignedReleaseDeployer:
                 self._write_catalog(self._quirks_root, active_catalog)
                 self._move_active_to_backup(active_catalog.files)
                 moved_current = True
-            elif legacy_version is not None:
-                self._remove_backup()
-
             try:
                 self._activate(stage_path, package_files)
             except OSError as err:
                 if moved_current:
                     self._restore_backup(active_catalog.files, package_catalog.files)
                 raise ReleaseDeploymentError("Unable to activate test Release") from err
-
-            if legacy_version is not None:
-                shutil.rmtree(self._legacy_path)
 
             return DeploymentState(
                 installed_version=version,
@@ -167,20 +159,11 @@ class UnsignedReleaseDeployer:
             if stage_path.exists():
                 shutil.rmtree(stage_path)
 
-    def _read_legacy_version(self) -> str | None:
-        """Return the old subdirectory version only when it is a real directory."""
-        if not self._legacy_path.exists():
-            return None
-        if not self._legacy_path.is_dir() or self._legacy_path.is_symlink():
-            raise ReleaseDeploymentError("Legacy managed directory must not be a symbolic link")
-        return self._read_version(self._legacy_path)
-
     def _assert_targets_are_managed(
         self,
         package_files: list[Path],
         active_catalog: ManagedQuirkCatalog | None,
         previous_version: str | None,
-        legacy_version: str | None,
     ) -> None:
         """Refuse to replace a root Quirk without an ezAIoT ownership marker."""
         active_files = set(active_catalog.files) if active_catalog else set()
@@ -194,8 +177,6 @@ class UnsignedReleaseDeployer:
                 )
         if previous_version is not None:
             return
-        if self._legacy_path.exists() and legacy_version is None:
-            raise ReleaseDeploymentError("Legacy managed directory has no version marker")
 
     def _replace_backup(self) -> None:
         """Create an empty local backup directory, removing only the old backup."""

@@ -3,6 +3,8 @@
 import json
 from pathlib import Path
 
+from custom_components.ezaiot.const import INTEGRATION_VERSION
+
 
 def test_manifest_uses_the_standard_integration_category() -> None:
     """The config entry belongs on Home Assistant's Integrations tab."""
@@ -20,3 +22,9 @@ def test_config_abort_translations_cover_duplicate_entry() -> None:
     ):
         translation = json.loads(path.read_text(encoding="utf-8"))
         assert translation["config"]["abort"]["already_configured"]
+
+
+def test_runtime_version_matches_manifest() -> None:
+    """Diagnostics must report the version HACS installs."""
+    manifest = json.loads(Path("custom_components/ezaiot/manifest.json").read_text())
+    assert INTEGRATION_VERSION == manifest["version"]

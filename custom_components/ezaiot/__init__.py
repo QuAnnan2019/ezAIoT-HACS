@@ -7,6 +7,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import (
     DATA_COORDINATOR,
+    DATA_ONBOARDING_STATE,
     DATA_RELEASE_COORDINATOR,
     DATA_RELEASE_SERVICE,
     DOMAIN,
@@ -14,6 +15,7 @@ from .const import (
 )
 from .coordinator import EzaiotCoordinator
 from .guidance import async_sync_guidance_notification
+from .onboarding import OnboardingState
 from .panel import async_register_panel, async_remove_panel
 from .release_coordinator import UnsignedReleaseCoordinator
 from .release_service import UnsignedReleaseService
@@ -29,9 +31,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await release_service.async_initialize()
         release_coordinator = UnsignedReleaseCoordinator(hass, release_service)
         release_coordinator.async_set_updated_data(release_service.state)
+        onboarding = OnboardingState(hass)
+        await onboarding.async_initialize()
         hass.data[DOMAIN] = {
             DATA_RELEASE_SERVICE: release_service,
             DATA_RELEASE_COORDINATOR: release_coordinator,
+            DATA_ONBOARDING_STATE: onboarding,
         }
 
     coordinator = EzaiotCoordinator(hass, hass.data[DOMAIN][DATA_RELEASE_SERVICE])

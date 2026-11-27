@@ -4,12 +4,13 @@ from datetime import timedelta
 from typing import Final
 
 DOMAIN: Final = "ezaiot"
-INTEGRATION_VERSION: Final = "0.1.1"
+INTEGRATION_VERSION: Final = "0.2.0"
 DATA_COORDINATOR: Final = "coordinator"
 DATA_PANEL_REGISTERED: Final = "ezaiot_panel_registered"
 DATA_PANEL_STATIC_REGISTERED: Final = "ezaiot_panel_static_registered"
 DATA_WEBSOCKET_REGISTERED: Final = "ezaiot_websocket_registered"
 DATA_RELEASE_SERVICE: Final = "release_service"
+DATA_ONBOARDING_STATE: Final = "onboarding_state"
 DATA_RELEASE_COORDINATOR: Final = "release_coordinator"
 GUIDANCE_NOTIFICATION_ID: Final = "ezaiot_zha_guidance"
 PLATFORMS: Final = ["sensor", "update"]
