@@ -30,16 +30,21 @@ def test_panel_uses_only_local_websocket_commands() -> None:
 
 
 def test_panel_renders_unsigned_test_release_controls() -> None:
-    """The panel must label test mode and confirm file-changing actions."""
+    """The panel must expose safe controls and recoverable setup guidance."""
     source = PANEL_MODULE.read_text(encoding="utf-8")
 
-    assert "Guided Quirk setup" in source
+    assert "data-dismiss-guidance" in source
+    assert "data-resume-guidance" in source
+    assert "Continue setup" in source
+    assert "Step 1 of 3" in source
+    assert "Step 2 of 3" in source
+    assert "Step 3 of 3" in source
+    assert "<h2>Guided Quirk setup</h2>" not in source
     assert "Check approved Release" in source
     assert "Install approved Quirk" in source
     assert "Unsigned test mode" in source
     assert "Install this approved Quirk Release?" in source
     assert "Restore the previous unsigned test Release?" in source
-    assert "Guided Quirk setup" in source
     assert "custom_quirks_path: /config/zha_quirks/ezaiot/" in source
     assert "Reconfigure or re-pair" in source
     assert "Technical support" in source

@@ -86,6 +86,51 @@ class EzaiotPanel extends HTMLElement {
     await this._loadStatus(true);
   }
 
+  _guidanceStep(guidance) {
+    if (!guidance?.actionable) return null;
+
+    const yaml = "zha:\n  custom_quirks_path: /config/zha_quirks/ezaiot/";
+    if (guidance.code === "pair_device") {
+      return {
+        number: 1,
+        label: "Step 1 of 3",
+        title: "Configure the ZHA Quirk path",
+        message: "Add this to configuration.yaml. ezAIoT never changes this file for you.",
+        detail: "Restart Home Assistant after saving, then return here to continue.",
+        yaml,
+      };
+    }
+    if (guidance.code === "install_release") {
+      return {
+        number: 3,
+        label: "Step 3 of 3",
+        title: "Check and install the approved Quirk",
+        message: "Use the approved Release controls after the ZHA path is configured and Home Assistant has restarted.",
+        detail: "Installation requires administrator confirmation and one further Home Assistant restart. Reconfigure or re-pair when guidance asks you to.",
+      };
+    }
+    if (guidance.code === "restart_home_assistant") {
+      return {
+        number: 2,
+        label: "Step 2 of 3",
+        title: "Restart Home Assistant",
+        message: "Restart Home Assistant to load the installed managed Quirk.",
+        detail: "After restart, return here to confirm that the supported device is active.",
+      };
+    }
+    return null;
+  }
+
+  _dismissGuidance() {
+    this._guidanceDismissed = true;
+    this._render();
+  }
+
+  _resumeGuidance() {
+    this._guidanceDismissed = false;
+    this._render();
+  }
+
   _render() {
     if (!this.shadowRoot) return;
 
@@ -94,6 +139,8 @@ class EzaiotPanel extends HTMLElement {
     const guidance = status?.guidance;
     const support = status?.support;
     const onboarding = status?.onboarding;
+    const guidanceStep = this._guidanceStep(guidance);
+    const showGuidance = Boolean(guidanceStep && !this._guidanceDismissed);
     const isAdmin = this._hass?.user?.is_admin === true;
     const actionInProgress = Boolean(this._releaseAction);
     const hasBackup = Boolean(release?.backup_version);
@@ -130,8 +177,6 @@ class EzaiotPanel extends HTMLElement {
         .release-actions button { border: 1px solid var(--primary-color); border-radius: 4px; background: transparent; color: var(--primary-color); min-height: 36px; padding: 0 14px; cursor: pointer; }
         .release-actions button.primary { background: var(--primary-color); color: var(--text-primary-color, white); }
         .release-actions button:disabled { cursor: default; opacity: 0.5; }
-        .guidance pre { background: var(--secondary-background-color); border: 1px solid var(--divider-color); margin: 14px 0; overflow-x: auto; padding: 12px; white-space: pre; }
-        .guidance-message { white-space: pre-line; }
         ul { list-style: none; margin: 0; padding: 0; }
         li { border-top: 1px solid var(--divider-color); display: flex; flex-direction: column; gap: 5px; padding: 14px 0; }
         li:first-child { border-top: 0; padding-top: 0; }
@@ -140,6 +185,8 @@ class EzaiotPanel extends HTMLElement {
         .error { color: var(--error-color); margin-top: 12px; }
         .dialog-backdrop { align-items: center; background: color-mix(in srgb, #000 45%, transparent); display: flex; inset: 0; justify-content: center; padding: 20px; position: fixed; z-index: 10; }
         .dialog { background: var(--card-background-color, var(--primary-background-color)); border-radius: 8px; max-width: 520px; padding: 24px; width: 100%; }
+        .setup-step { color: var(--secondary-text-color); font-size: 14px; margin-bottom: 8px; }
+        .setup-dialog pre { background: var(--secondary-background-color); border: 1px solid var(--divider-color); margin: 18px 0; overflow-x: auto; padding: 12px; white-space: pre; }
       </style>
       <main>
         <header>
@@ -147,17 +194,12 @@ class EzaiotPanel extends HTMLElement {
             <h1>ezAIoT</h1>
             <p class="subtitle">Local device compatibility, guidance, and support.</p>
           </div>
-          <button class="refresh" title="Refresh" aria-label="Refresh local status">↻</button>
+          <div class="release-actions" style="margin-top:0">
+            ${guidanceStep && !showGuidance ? "<button data-resume-guidance=\"true\">Continue setup</button>" : ""}
+            <button class="refresh" title="Refresh" aria-label="Refresh local status">↻</button>
+          </div>
         </header>
         <div class="grid">
-          <section class="wide guidance ${guidance?.actionable ? "warning" : "state"}">
-            <h2>Guided Quirk setup</h2>
-            <strong>${this._escape(guidance?.title || "Loading guidance...")}</strong>
-            <pre>zha:
-  custom_quirks_path: /config/zha_quirks/ezaiot/</pre>
-            <p class="guidance-message">${this._escape(guidance?.message || "")}</p>
-            <p class="muted" style="margin-top:12px">This setting is manual. After an update, Reconfigure or re-pair when guidance asks you to.</p>
-          </section>
           <section>
             <h2>Supported devices</h2>
             <div class="metric">${status ? status.supported_count : "—"}</div>
@@ -194,11 +236,20 @@ class EzaiotPanel extends HTMLElement {
             <p class="muted" style="margin-top:12px">Tutorial and review links will appear here when configured.</p>
           </section>
         </div>
+        ${showGuidance ? `<div class="dialog-backdrop" role="dialog" aria-modal="true" aria-label="Guided setup"><div class="dialog setup-dialog"><p class="setup-step">${guidanceStep.label}</p><h2>${this._escape(guidanceStep.title)}</h2><p>${this._escape(guidanceStep.message)}</p>${guidanceStep.yaml ? `<pre>${this._escape(guidanceStep.yaml)}</pre>` : ""}<p class="muted" style="margin-top:12px">${this._escape(guidanceStep.detail)}</p><div class="release-actions"><button data-dismiss-guidance="true">Later</button></div></div></div>` : ""}
         ${onboarding?.show_completion ? `<div class="dialog-backdrop" role="dialog" aria-modal="true" aria-label="Setup complete"><div class="dialog"><h2>Setup complete</h2><p>The managed Quirk is active for a supported ZHA device.</p><p class="muted" style="margin-top:12px">Use Download ZHA diagnostics or Technical support if you need help. The review page is not available yet.</p><div class="release-actions"><button class="primary" data-dismiss-completion="true">Continue</button><button disabled>Review page coming soon</button></div></div></div>` : ""}
         ${this._error ? `<p class="error">${this._error}</p>` : ""}
       </main>
     `;
     this.shadowRoot.querySelector(".refresh")?.addEventListener("click", () => this._loadStatus(true));
+    this.shadowRoot.querySelector("[data-dismiss-guidance]")?.addEventListener(
+      "click",
+      () => this._dismissGuidance(),
+    );
+    this.shadowRoot.querySelector("[data-resume-guidance]")?.addEventListener(
+      "click",
+      () => this._resumeGuidance(),
+    );
     this.shadowRoot.querySelectorAll("[data-release-action]").forEach((button) => {
       button.addEventListener("click", () => {
         const type = button.dataset.releaseAction;
