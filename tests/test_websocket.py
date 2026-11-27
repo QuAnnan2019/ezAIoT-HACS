@@ -77,7 +77,7 @@ def test_websocket_returns_redacted_panel_status() -> None:
     assert connection.result == (
         7,
         {
-            "integration_version": "0.2.2",
+            "integration_version": "0.2.3",
             "supported_count": 1,
             "records": [
                 {

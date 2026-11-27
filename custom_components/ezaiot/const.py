@@ -4,7 +4,7 @@ from datetime import timedelta
 from typing import Final
 
 DOMAIN: Final = "ezaiot"
-INTEGRATION_VERSION: Final = "0.2.2"
+INTEGRATION_VERSION: Final = "0.2.3"
 DATA_COORDINATOR: Final = "coordinator"
 DATA_PANEL_REGISTERED: Final = "ezaiot_panel_registered"
 DATA_PANEL_STATIC_REGISTERED: Final = "ezaiot_panel_static_registered"
