@@ -79,6 +79,9 @@ class UnsignedReleaseService:
         )
         installed_version = self._stored_version(stored, "installed_version")
         backup_version = self._stored_version(stored, "backup_version")
+        if not self._managed_quirks:
+            installed_version = None
+            backup_version = None
         self._state = UnsignedReleaseState(
             status=ReleaseStatus.UP_TO_DATE if installed_version else ReleaseStatus.NO_RELEASE,
             installed_version=installed_version,

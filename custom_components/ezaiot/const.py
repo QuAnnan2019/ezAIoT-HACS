@@ -4,7 +4,7 @@ from datetime import timedelta
 from typing import Final
 
 DOMAIN: Final = "ezaiot"
-INTEGRATION_VERSION: Final = "0.2.0"
+INTEGRATION_VERSION: Final = "0.2.1"
 DATA_COORDINATOR: Final = "coordinator"
 DATA_PANEL_REGISTERED: Final = "ezaiot_panel_registered"
 DATA_PANEL_STATIC_REGISTERED: Final = "ezaiot_panel_static_registered"
@@ -15,7 +15,7 @@ DATA_RELEASE_COORDINATOR: Final = "release_coordinator"
 GUIDANCE_NOTIFICATION_ID: Final = "ezaiot_zha_guidance"
 PLATFORMS: Final = ["sensor", "update"]
 PANEL_URL_PATH: Final = "ezaiot"
-PANEL_MODULE_URL: Final = "/ezaiot-panel/ezaiot-panel.js"
+PANEL_MODULE_URL: Final = f"/ezaiot-panel/ezaiot-panel.js?v={INTEGRATION_VERSION}"
 PANEL_COMPONENT_NAME: Final = "ezaiot-panel"
 MANUFACTURER_RTI_TEK: Final = "Rti-Tek"
 MODEL_ETRV_ZB01: Final = "eTRV-ZB01"
