@@ -28,6 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await async_register_panel(hass)
         async_register_websocket_commands(hass)
         release_service = UnsignedReleaseService(hass)
+        await hass.async_add_executor_job(release_service.ensure_managed_directory)
         await release_service.async_initialize()
         release_coordinator = UnsignedReleaseCoordinator(hass, release_service)
         release_coordinator.async_set_updated_data(release_service.state)

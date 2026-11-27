@@ -71,6 +71,10 @@ class UnsignedReleaseService:
         """Return only active Release signatures, never local file paths."""
         return self._managed_quirks
 
+    def ensure_managed_directory(self) -> None:
+        """Ensure the configured empty Quirk directory is present."""
+        self._deployer.ensure_managed_directory()
+
     async def async_initialize(self) -> UnsignedReleaseState:
         """Load the minimal persisted installation record."""
         stored = await self._store.async_load() or {}

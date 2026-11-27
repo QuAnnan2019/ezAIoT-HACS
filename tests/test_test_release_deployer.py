@@ -35,6 +35,30 @@ def _package(entries: list[tuple[str, bytes]]) -> bytes:
     return buffer.getvalue()
 
 
+def test_ensure_managed_directory_creates_only_the_missing_path(tmp_path: Path) -> None:
+    deployer = UnsignedReleaseDeployer(tmp_path)
+
+    deployer.ensure_managed_directory()
+
+    managed_directory = tmp_path / "zha_quirks" / "ezaiot"
+    assert managed_directory.is_dir()
+    assert list(managed_directory.iterdir()) == []
+
+
+def test_ensure_managed_directory_preserves_existing_directory_contents(
+    tmp_path: Path,
+) -> None:
+    managed_directory = tmp_path / "zha_quirks" / "ezaiot"
+    managed_directory.mkdir(parents=True)
+    user_file = managed_directory / "user_quirk.py"
+    user_file.write_text("user", encoding="utf-8")
+    deployer = UnsignedReleaseDeployer(tmp_path)
+
+    deployer.ensure_managed_directory()
+
+    assert user_file.read_text(encoding="utf-8") == "user"
+
+
 def test_deployer_installs_to_configured_quirk_root_and_keeps_user_files(
     tmp_path: Path,
 ) -> None:
