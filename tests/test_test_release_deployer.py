@@ -147,5 +147,5 @@ def test_deployer_rejects_symlink_and_preserves_current_version(tmp_path: Path) 
         deployer.deploy("0.0.2", archive.getvalue())
 
     assert (
-        tmp_path / "zha_quirks" / "rti_tek_etrv_zb01.py"
+        tmp_path / "zha_quirks" / "ezaiot" / "rti_tek_etrv_zb01.py"
     ).read_bytes() == b"first"

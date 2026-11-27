@@ -37,9 +37,9 @@ def test_panel_renders_unsigned_test_release_controls() -> None:
     assert "Check approved Release" in source
     assert "Install approved Quirk" in source
     assert "Unsigned test mode" in source
-    assert "Install this unsigned test Release?" in source
+    assert "Install this approved Quirk Release?" in source
     assert "Restore the previous unsigned test Release?" in source
-    assert "ZHA setup" in source
+    assert "Guided Quirk setup" in source
     assert "custom_quirks_path: /config/zha_quirks/ezaiot/" in source
     assert "Reconfigure or re-pair" in source
     assert "Technical support" in source

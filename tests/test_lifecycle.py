@@ -33,12 +33,14 @@ def test_first_entry_registers_panel_websocket_and_coordinator() -> None:
         patch("custom_components.ezaiot.EzaiotCoordinator") as coordinator_type,
         patch("custom_components.ezaiot.UnsignedReleaseService") as service_type,
         patch("custom_components.ezaiot.UnsignedReleaseCoordinator") as release_type,
+        patch("custom_components.ezaiot.OnboardingState") as onboarding_type,
     ):
         coordinator = coordinator_type.return_value
         coordinator.async_config_entry_first_refresh = AsyncMock()
         coordinator.data = DiscoveryResult(CompatibilityState.NOT_FOUND, ())
         service_type.return_value.async_initialize = AsyncMock()
         release_type.return_value.async_config_entry_first_refresh = AsyncMock()
+        onboarding_type.return_value.async_initialize = AsyncMock()
 
         assert asyncio.run(async_setup_entry(hass, entry)) is True
 
@@ -48,6 +50,7 @@ def test_first_entry_registers_panel_websocket_and_coordinator() -> None:
     assert hass.data[DOMAIN][entry.entry_id][DATA_COORDINATOR] is coordinator
     assert hass.data[DOMAIN][DATA_RELEASE_SERVICE] is service_type.return_value
     assert hass.data[DOMAIN][DATA_RELEASE_COORDINATOR] is release_type.return_value
+    assert hass.data[DOMAIN]["onboarding_state"] is onboarding_type.return_value
     sync_guidance.assert_called_once_with(hass, coordinator.data)
     forward_setups.assert_awaited_once()
 
